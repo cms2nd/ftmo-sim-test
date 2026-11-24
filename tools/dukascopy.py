@@ -107,9 +107,24 @@ def fetch_day_candles(dsym, div, d, side):
     return df[df["vol"] > 0][["open", "high", "low", "close"]]
 
 
-def build_from_candles(sym, start, end, out_path):
+def _day_bars(dsym, div, d):
+    b, a = fetch_day_candles(dsym, div, d, "BID"), fetch_day_candles(dsym, div, d, "ASK")
+    if not (len(b) and len(a)):
+        return None
+    j = b.join(a, lsuffix="_b", rsuffix="_a", how="inner")
+    mid = pd.DataFrame({k: (j[k + "_b"] + j[k + "_a"]) / 2 for k in ("open", "high", "low", "close")})
+    mid["spread"] = j["close_a"] - j["close_b"]
+    g = mid.resample("5min")
+    return pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
+                         "close": g["close"].last(), "spread_avg": g["spread"].mean(),
+                         "spread_max": g["spread"].max(), "ticks": g["close"].count()}).dropna()
+
+
+def build_from_candles(sym, start, end, out_path, workers=None):
     """Bougies 5 min (prix milieu) + spread moyen/max réel calculé sur les bougies 1 min ask-bid.
-    Sauvegarde après chaque journée : une coupure ne fait rien perdre."""
+    Journées téléchargées en parallèle (DUKA_WORKERS, défaut 8) ; sauvegarde régulière : une coupure ne fait rien perdre."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    workers = workers or int(os.environ.get("DUKA_WORKERS", "8"))
     dsym, div = SYMS[sym]
     parts = []
     if os.path.exists(out_path):
@@ -117,23 +132,26 @@ def build_from_candles(sym, start, end, out_path):
         old.index = pd.to_datetime(old.index, utc=True)
         parts.append(old)
     done = {ts.date() for ts in parts[0].index} if parts else set()
-    d = start
+    days, d = [], start
     while d <= end:
         if d.weekday() < 5 and d not in done:
-            b, a = fetch_day_candles(dsym, div, d, "BID"), fetch_day_candles(dsym, div, d, "ASK")
-            if len(b) and len(a):
-                j = b.join(a, lsuffix="_b", rsuffix="_a", how="inner")
-                mid = pd.DataFrame({k: (j[k + "_b"] + j[k + "_a"]) / 2 for k in ("open", "high", "low", "close")})
-                mid["spread"] = j["close_a"] - j["close_b"]
-                g = mid.resample("5min")
-                bars = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
-                                     "close": g["close"].last(), "spread_avg": g["spread"].mean(),
-                                     "spread_max": g["spread"].max(), "ticks": g["close"].count()}).dropna()
-                parts.append(bars)
-                pd.concat(parts).sort_index().to_csv(out_path, float_format="%.6f")
-                print(f"{sym} {d}: {len(bars)} bougies 5 min", flush=True)
+            days.append(d)
         d += timedelta(days=1)
-    return pd.concat(parts).sort_index() if parts else pd.DataFrame()
+    t0, n = time.time(), 0
+    with ThreadPoolExecutor(workers) as ex:
+        futs = {ex.submit(_day_bars, dsym, div, d): d for d in days}
+        for f in as_completed(futs):
+            bars = f.result()
+            n += 1
+            if bars is not None and len(bars):
+                parts.append(bars)
+                print(f"{sym} {futs[f]}: {len(bars)} bougies 5 min ({n}/{len(days)}, {time.time() - t0:.0f}s)", flush=True)
+            if n % 5 == 0 or n == len(days):
+                pd.concat(parts).sort_index().to_csv(out_path, float_format="%.6f")
+    out = pd.concat(parts).sort_index() if parts else pd.DataFrame()
+    if len(out):
+        out.to_csv(out_path, float_format="%.6f")
+    return out
 
 
 if __name__ == "__main__":
