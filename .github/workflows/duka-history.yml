@@ -1,5 +1,5 @@
 name: dukascopy-history
-# Télécharge 2 ans de bougies Dukascopy (bid/ask 1 min -> 5 min + spread réel), un job par (instrument, mois).
+# Télécharge 1 an de bougies Dukascopy (bid/ask 1 min -> 5 min + spread réel), un job par (instrument, mois).
 # Relancer tant que des morceaux restent : seuls les morceaux sans fichier .done sont retéléchargés.
 on:
   workflow_dispatch:
