@@ -73,10 +73,14 @@ class Engine:
     def _inst(sym):
         return C.INSTRUMENTS[sym]
 
+    def _sp(self, sym):
+        """Spread courant : spread réel de la bougie (données Dukascopy) sinon spread fixe de config."""
+        return self.s.get("cur_spread", {}).get(sym, C.INSTRUMENTS[sym]["spread"])
+
     def _cost_exit(self, sym, price, units, stop=False):
         i = self._inst(sym)
         slip = i["slippage"] * (2 if stop else 1)
-        return (i["spread"] / 2 + slip) * units * i["usd_per_point"] + abs(price) * units * i["usd_per_point"] * i["commission_rate"]
+        return (self._sp(sym) / 2 + slip) * units * i["usd_per_point"] + abs(price) * units * i["usd_per_point"] * i["commission_rate"]
 
     def _pos_pnl(self, p, price):
         i = self._inst(p["sym"])
@@ -92,7 +96,7 @@ class Engine:
                 px = b["low"] if p["side"] == "long" else b["high"]
             i = self._inst(p["sym"])
             # valeur liquidative: prix bid/ask (demi-spread) inclus
-            adj = -i["spread"] / 2 if p["side"] == "long" else i["spread"] / 2
+            adj = -self._sp(p["sym"]) / 2 if p["side"] == "long" else self._sp(p["sym"]) / 2
             tot += self._pos_pnl(p, px + adj)
         return tot
 
@@ -130,9 +134,9 @@ class Engine:
         i = self._inst(p["sym"])
         slip = i["slippage"] * (2 if stop else 1)
         if p["side"] == "long":
-            fill = price - i["spread"] / 2 - slip
+            fill = price - self._sp(p["sym"]) / 2 - slip
         else:
-            fill = price + i["spread"] / 2 + slip
+            fill = price + self._sp(p["sym"]) / 2 + slip
         gross = self._pos_pnl(p, fill)
         comm = abs(fill) * p["units"] * i["usd_per_point"] * i["commission_rate"]
         pnl = gross - comm - p["entry_commission"]
@@ -235,12 +239,12 @@ class Engine:
     def open(self, ts, sym, side, ref_price, stop, target, tag=""):
         i = self._inst(sym)
         slip = i["slippage"]
-        entry = ref_price + (i["spread"] / 2 + slip) * (1 if side == "long" else -1)
+        entry = ref_price + (self._sp(sym) / 2 + slip) * (1 if side == "long" else -1)
         dist = abs(entry - stop)
         if (side == "long" and stop >= entry) or (side == "short" and stop <= entry) or dist <= 0:
             return None
         # Risque fixe (jamais augmenté après une perte): 250 $ frais de sortie inclus
-        exit_cost_per_unit = (i["spread"] / 2 + 2 * slip) * i["usd_per_point"] + abs(stop) * i["usd_per_point"] * i["commission_rate"]
+        exit_cost_per_unit = (self._sp(sym) / 2 + 2 * slip) * i["usd_per_point"] + abs(stop) * i["usd_per_point"] * i["commission_rate"]
         entry_comm_per_unit = abs(entry) * i["usd_per_point"] * i["commission_rate"]
         units = C.RISK_PER_TRADE / (dist * i["usd_per_point"] + exit_cost_per_unit + entry_comm_per_unit)
         eq = self.s["balance"] + self._floating()
@@ -266,7 +270,7 @@ class Engine:
     def manage_bar(self, sym, close_ts, bar):
         """Gère stops/objectifs d'une position sur une bougie (plus haut/plus bas)."""
         i = self._inst(sym)
-        hs = i["spread"] / 2
+        hs = self._sp(sym) / 2
         for p in [p for p in self.s["positions"] if p["sym"] == sym]:
             if p["side"] == "long":
                 bid_lo, bid_hi, bid_open = bar["low"] - hs, bar["high"] - hs, bar["open"] - hs
@@ -292,6 +296,8 @@ class Engine:
         """Traite toutes les bougies qui se clôturent à close_ts. bars: sym -> row(dict)."""
         self.rollover(close_ts)
         for sym, b in bars.items():
+            if "spread" in b:
+                self.s.setdefault("cur_spread", {})[sym] = b["spread"]
             self.manage_bar(sym, close_ts, b)
             self.s["last_prices"][sym] = b["close"]
         self.check_rules(close_ts, bars)
@@ -312,7 +318,7 @@ class Engine:
                 if p is not None and "entry" in sig:
                     # Ordre limite rempli dans la bougie: si le stop est aussi dans la bougie,
                     # on suppose le pire (rempli puis stoppé).
-                    hs = self._inst(sym)["spread"] / 2
+                    hs = self._sp(sym) / 2
                     if (p["side"] == "long" and b["low"] - hs <= p["stop"]) or \
                        (p["side"] == "short" and b["high"] + hs >= p["stop"]):
                         self.close(p, p["stop"] + (hs if p["side"] == "long" else -hs), close_ts, "stop-loss", stop=True)

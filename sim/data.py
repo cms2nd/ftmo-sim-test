@@ -62,3 +62,14 @@ def update(sym, period="5d") -> pd.DataFrame:
 def complete_bars(df: pd.DataFrame, now_utc) -> pd.DataFrame:
     """Supprime la bougie en cours de formation (début + 5 min > maintenant)."""
     return df[df.index + pd.Timedelta(minutes=5) <= pd.Timestamp(now_utc)]
+
+
+def load_duka(sym) -> pd.DataFrame:
+    """Bougies 5 min Dukascopy (prix milieu + spread moyen réel de la bougie)."""
+    p = os.path.join(DATA_DIR, "duka", f"{sym}_5m.csv.gz")
+    if not os.path.exists(p):
+        return pd.DataFrame(columns=["open", "high", "low", "close", "spread"])
+    df = pd.read_csv(p, index_col=0)
+    df.index = pd.to_datetime(df.index, utc=True)
+    df = df[df["ticks"] >= 3]
+    return df.rename(columns={"spread_avg": "spread"})[["open", "high", "low", "close", "spread"]]

@@ -25,9 +25,13 @@ from strategies.base import load
 def timeline(data, bar_minutes=5):
     rows = {}
     for sym, df in data.items():
-        for ts, o, h, l, c in zip(df.index, df["open"].values, df["high"].values, df["low"].values, df["close"].values):
+        sp = df["spread"].values if "spread" in df.columns else [None] * len(df)
+        for ts, o, h, l, c, z in zip(df.index, df["open"].values, df["high"].values, df["low"].values, df["close"].values, sp):
             ct = (ts + pd.Timedelta(minutes=bar_minutes)).to_pydatetime()
-            rows.setdefault(ct, {})[sym] = {"open": float(o), "high": float(h), "low": float(l), "close": float(c)}
+            b = {"open": float(o), "high": float(h), "low": float(l), "close": float(c)}
+            if z is not None and z == z:
+                b["spread"] = float(z)
+            rows.setdefault(ct, {})[sym] = b
     return sorted(rows.items())
 
 

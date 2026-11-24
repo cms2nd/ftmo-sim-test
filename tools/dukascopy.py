@@ -25,23 +25,25 @@ SYMS = {
     "XAUUSD": ("XAUUSD", 1e3), "EURUSD": ("EURUSD", 1e5), "GBPUSD": ("GBPUSD", 1e5),
 }
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "duka")
+MISSING = []
 UA = {"User-Agent": "Mozilla/5.0 (research backtest)"}
 
 
 def fetch_hour(dsym, div, dt):
     url = f"https://datafeed.dukascopy.com/datafeed/{dsym}/{dt.year}/{dt.month - 1:02d}/{dt.day:02d}/{dt.hour:02d}h_ticks.bi5"
-    for attempt in range(5):
+    for attempt in range(8):
         try:
             raw = urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read()
             break
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return []
-            time.sleep(2 * (attempt + 1))
+            time.sleep(min(60, 3 * 2 ** attempt))
         except Exception:
-            time.sleep(2 * (attempt + 1))
+            time.sleep(min(60, 3 * 2 ** attempt))
     else:
-        raise RuntimeError(f"échec {url}")
+        MISSING.append(url)
+        return []
     if not raw:
         return []
     d = lzma.decompress(raw)
@@ -58,7 +60,7 @@ def hours(start, end):
         t += timedelta(hours=1)
 
 
-def build(sym, start, end, workers=4):
+def build(sym, start, end, workers=2):
     dsym, div = SYMS[sym]
     hs = list(hours(start, end))
     ticks = []
@@ -103,4 +105,6 @@ if __name__ == "__main__":
         t0 = time.time()
         b = build(sym, s, e)
         b.to_csv(os.path.join(OUT, f"{sym}_5m.csv.gz"), float_format="%.6f")
+        print(f"{sym}: heures manquantes après nouvelles tentatives : {len(MISSING)}", flush=True)
+        MISSING.clear()
         print(f"{sym}: {len(b)} bougies, spread moyen {b['spread_avg'].mean() if len(b) else float('nan'):.5f} ({time.time() - t0:.0f}s)", flush=True)
