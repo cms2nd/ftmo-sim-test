@@ -1,0 +1,33 @@
+name: dukascopy-collect
+
+# Récupère les artefacts data/duka d'un run précédent (même interrompu) et les commite.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id: {description: "ID du run dukascopy-download", required: true}
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: data/duka
+          pattern: "duka-*"
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - run: |
+          ls -la data/duka
+          git config user.name "ftmo-sim-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/duka
+          git diff --cached --quiet && exit 0
+          git commit -m "data: ticks Dukascopy (run ${{ inputs.run_id }})"
+          for i in 1 2 3 4; do git push && exit 0; sleep $((i*5)); git pull --rebase -X theirs || true; done
+          exit 1
