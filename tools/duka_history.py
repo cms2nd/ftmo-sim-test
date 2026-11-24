@@ -25,7 +25,7 @@ def plan(limit=256):
     out = []
     for y, m in months():
         end = (date(y + (m == 12), m % 12 + 1, 1) - pd.Timedelta(days=1).to_pytimedelta())
-        for sym in SYMS:
+        for sym in (SYMS if (y, m) >= (2025, 11) else ["XAUUSD"]):   # année de validation : or uniquement
             tag = f"{sym}_{y}-{m:02d}"
             if not os.path.exists(os.path.join(PARTS, tag + ".done")):
                 out.append(dict(sym=sym, tag=tag, start=f"{y}-{m:02d}-01", end=end.isoformat()))
