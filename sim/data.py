@@ -71,5 +71,5 @@ def load_duka(sym) -> pd.DataFrame:
         return pd.DataFrame(columns=["open", "high", "low", "close", "spread"])
     df = pd.read_csv(p, index_col=0)
     df.index = pd.to_datetime(df.index, utc=True)
-    df = df[df["ticks"] >= 3]
+    df = df[df["ticks"] >= 2]
     return df.rename(columns={"spread_avg": "spread"})[["open", "high", "low", "close", "spread"]]

@@ -80,6 +80,62 @@ def build(sym, start, end, workers=2):
     return bars
 
 
+def fetch_day_candles(dsym, div, d, side):
+    """Bougies 1 min d'une journée (BID ou ASK) : 1 fichier par jour au lieu de 24 fichiers de ticks."""
+    url = f"https://datafeed.dukascopy.com/datafeed/{dsym}/{d.year}/{d.month - 1:02d}/{d.day:02d}/{side}_candles_min_1.bi5"
+    for attempt in range(8):
+        try:
+            raw = urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read()
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return pd.DataFrame()
+            time.sleep(min(60, 3 * 2 ** attempt))
+        except Exception:
+            time.sleep(min(60, 3 * 2 ** attempt))
+    else:
+        MISSING.append(url)
+        return pd.DataFrame()
+    if not raw:
+        return pd.DataFrame()
+    recs = list(struct.iter_unpack(">IIIIIf", lzma.decompress(raw)))
+    base = datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp()
+    df = pd.DataFrame(recs, columns=["sec", "open", "close", "low", "high", "vol"])
+    df.index = pd.to_datetime(base + df["sec"], unit="s", utc=True)
+    for c in ("open", "close", "low", "high"):
+        df[c] = df[c] / div
+    return df[df["vol"] > 0][["open", "high", "low", "close"]]
+
+
+def build_from_candles(sym, start, end, out_path):
+    """Bougies 5 min (prix milieu) + spread moyen/max réel calculé sur les bougies 1 min ask-bid.
+    Sauvegarde après chaque journée : une coupure ne fait rien perdre."""
+    dsym, div = SYMS[sym]
+    parts = []
+    if os.path.exists(out_path):
+        old = pd.read_csv(out_path, index_col=0)
+        old.index = pd.to_datetime(old.index, utc=True)
+        parts.append(old)
+    done = {ts.date() for ts in parts[0].index} if parts else set()
+    d = start
+    while d <= end:
+        if d.weekday() < 5 and d not in done:
+            b, a = fetch_day_candles(dsym, div, d, "BID"), fetch_day_candles(dsym, div, d, "ASK")
+            if len(b) and len(a):
+                j = b.join(a, lsuffix="_b", rsuffix="_a", how="inner")
+                mid = pd.DataFrame({k: (j[k + "_b"] + j[k + "_a"]) / 2 for k in ("open", "high", "low", "close")})
+                mid["spread"] = j["close_a"] - j["close_b"]
+                g = mid.resample("5min")
+                bars = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
+                                     "close": g["close"].last(), "spread_avg": g["spread"].mean(),
+                                     "spread_max": g["spread"].max(), "ticks": g["close"].count()}).dropna()
+                parts.append(bars)
+                pd.concat(parts).sort_index().to_csv(out_path, float_format="%.6f")
+                print(f"{sym} {d}: {len(bars)} bougies 5 min", flush=True)
+        d += timedelta(days=1)
+    return pd.concat(parts).sort_index() if parts else pd.DataFrame()
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", required=True)
@@ -103,8 +159,7 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     for sym in a.symbols.split(","):
         t0 = time.time()
-        b = build(sym, s, e)
-        b.to_csv(os.path.join(OUT, f"{sym}_5m.csv.gz"), float_format="%.6f")
+        b = build_from_candles(sym, s, e, os.path.join(OUT, f"{sym}_5m.csv.gz"))
         print(f"{sym}: heures manquantes après nouvelles tentatives : {len(MISSING)}", flush=True)
         MISSING.clear()
         print(f"{sym}: {len(b)} bougies, spread moyen {b['spread_avg'].mean() if len(b) else float('nan'):.5f} ({time.time() - t0:.0f}s)", flush=True)
