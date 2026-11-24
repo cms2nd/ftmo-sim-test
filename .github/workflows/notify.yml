@@ -1,28 +1,31 @@
 name: notify
+# Envoi Telegram (secret TELEGRAM_KEY). kind : text | research | daily | report
 on:
   workflow_dispatch:
     inputs:
-      message:
-        description: "Texte à envoyer (vide = résumé du rapport)"
-        required: false
-        default: ""
-  workflow_call:
-    inputs:
-      message: {type: string, required: false, default: ""}
-    secrets:
-      TELEGRAM_KEY: {required: true}
+      kind: {description: "text, research, daily ou report", default: "daily"}
+      message: {description: "Texte (pour kind=text)", required: false, default: ""}
 jobs:
   send:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt
       - uses: actions/cache@v4
         with: {path: .tg_chat, key: tg-chat-v1}
       - name: Envoi Telegram
         env:
           TELEGRAM_KEY: ${{ secrets.TELEGRAM_KEY }}
+          KIND: ${{ inputs.kind }}
           MSG: ${{ inputs.message }}
         run: |
-          if [ -z "$MSG" ]; then MSG="$(head -c 3500 docs/notify.txt 2>/dev/null || echo 'FTMO sim : voir RAPPORT.md')"; fi
-          printf '%s\n\nhttps://github.com/${{ github.repository }}/blob/main/RAPPORT.md' "$MSG" | python tools/notify.py -
+          case "$KIND" in
+            text)     printf '%s' "$MSG" | python tools/notify.py - ;;
+            research) python tools/notify.py --photo "$(python tools/infographic.py research)" "Comparaison prix Yahoo / broker"
+                      python tools/notify.py --report ;;
+            report)   python tools/notify.py --report ;;
+            *)        python tools/notify.py --photo "$(python tools/infographic.py)" "Bilan du jour" ;;
+          esac

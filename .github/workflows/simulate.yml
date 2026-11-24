@@ -28,6 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/cache@v4
+        with: {path: .tg_chat, key: tg-chat-v1}
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -59,6 +62,25 @@ jobs:
             if python -c "import json,sys; sys.exit(0 if json.load(open('state/state.json')).get('test_finished') else 1)"; then break; fi
             sleep $(( 300 - $(date +%s) % 300 + 60 ))   # prochaine minute x1 (bougie 5 min clôturée + délai Yahoo)
           done
+
+      - name: Bilan du jour sur Telegram (infographie, + rapport en fin de test)
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          TELEGRAM_KEY: ${{ secrets.TELEGRAM_KEY }}
+        run: |
+          [ -n "$TELEGRAM_KEY" ] || exit 0
+          day=$(python -c "import json;print(json.load(open('state/state.json'))['day'])")
+          fin=$(python -c "import json;print(1 if json.load(open('state/state.json')).get('test_finished') else 0)")
+          hm=$(date -u +%H%M)
+          mark="state/notified_$day"
+          if { [ "$hm" -ge 2150 ] || [ "$fin" = 1 ]; } && [ ! -f "$mark" ]; then
+            git pull -q --rebase -X theirs origin main || true
+            python tools/notify.py --photo "$(python tools/infographic.py)" "Bilan du jour — FTMO paper trading"
+            if [ "$fin" = 1 ]; then python tools/notify.py --report "Test terminé : rapport complet"; fi
+            touch "$mark"; git add "$mark"; git commit -q -m "notif: $day"
+            for i in 1 2 3; do git push -q && break; sleep 5; git pull -q --rebase -X theirs origin main; done
+          fi
 
       - name: Relance de la boucle (si séance pas finie)
         if: ${{ inputs.loop == 'true' }}
