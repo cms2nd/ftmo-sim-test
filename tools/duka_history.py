@@ -11,7 +11,7 @@ import pandas as pd
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARTS = os.path.join(ROOT, "data", "duka", "parts")
 SYMS = ["US100", "US30", "GER40", "XAUUSD", "EURUSD", "GBPUSD"]
-FIRST, LAST = (2025, 11), (2026, 8)   # 1 an ; sept.→nov. 2026 déjà présents
+FIRST, LAST = (2024, 11), (2026, 8)   # année de développement 2025-11→2026-11 + année de validation 2024-11→2025-10
 
 
 def months():
