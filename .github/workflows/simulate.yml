@@ -51,5 +51,5 @@ jobs:
         run: |
           if python -c "import json,sys; s=json.load(open('state/state.json')); sys.exit(0 if s.get('test_finished') else 1)"; then
             echo "Test terminé : désactivation du workflow."
-            gh workflow disable simulate.yml --repo "$GITHUB_REPOSITORY" || true
+            gh api -X PUT "repos/$GITHUB_REPOSITORY/actions/workflows/simulate.yml/disable" || true
           fi
