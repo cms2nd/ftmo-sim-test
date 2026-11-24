@@ -39,7 +39,7 @@ def daily_card(state_path=os.path.join(ROOT, "state", "state.json"), day=None):
     trades = [t for t in s["trades"] if t["exit_time"] and
               datetime.fromisoformat(t["exit_time"]).astimezone(C.PRAGUE).date().isoformat() == day]
     fig = _fig()
-    fig.text(0.06, 0.955, "FTMO 25k · paper trading", color=MUTED, fontsize=11)
+    fig.text(0.06, 0.955, f"FTMO 25k · paper trading · {s.get('strategy', '')}", color=MUTED, fontsize=11)
     fig.text(0.06, 0.915, f"Bilan du {datetime.fromisoformat(day):%d/%m/%Y}", color=FG, fontsize=22, weight="bold")
     st = s["status"]; stc = GREEN if "RÉUSSI" in st else RED if "ÉCHOU" in st else BLUE
     fig.text(0.06, 0.88, f"Statut : {st}" + (f" — {s['status_reason']}" if s.get("status_reason") else ""), color=stc, fontsize=11)
@@ -78,7 +78,7 @@ def daily_card(state_path=os.path.join(ROOT, "state", "state.json"), day=None):
     if not trades:
         fig.text(0.06, y, "Aucun trade (pas de signal ou coupe-circuit).", color=FG, fontsize=10)
     os.makedirs(OUT, exist_ok=True)
-    p = os.path.join(OUT, f"jour_{day}.png"); fig.savefig(p, facecolor=BG); plt.close(fig)
+    p = os.path.join(OUT, f"jour_{day}_{s.get('strategy', '')}.png"); fig.savefig(p, facecolor=BG); plt.close(fig)
     return p
 
 
@@ -180,4 +180,4 @@ def smc_card():
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    print(research_card() if a == ["research"] else wf_card() if a == ["wf"] else smc_card() if a == ["smc"] else daily_card())
+    print(research_card() if a == ["research"] else wf_card() if a == ["wf"] else smc_card() if a == ["smc"] else daily_card(a[0]) if a else daily_card())

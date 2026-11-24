@@ -259,6 +259,22 @@ def research_section():
     return "\n".join(L)
 
 
+def parallel_section(s):
+    eq = s.get("equity", s["balance"])
+    L = ["Même moteur, mêmes règles FTMO et mêmes dates que le test principal. Paramètres figés issus du "
+         "walk-forward 1 an sur prix broker (stop au bord du range, objectif 3 R, EURUSD / GER40 / or).\n",
+         f"- Statut : **{s['status']}**" + (f" — {s['status_reason']} ({s['status_time']})" if s.get("status_reason") else ""),
+         f"- Solde : **{_fmt(s['balance'])} $** — equity {_fmt(eq)} $ — plancher {_fmt(s['floor'])} $ — "
+         f"dernière exécution {s.get('last_run', '—')[:16]} UTC"]
+    if s["trades"]:
+        L.append("\n| Entrée | Instrument | Sens | Sortie | Raison | P&L |\n|---|---|---|---|---|---:|")
+        for t in s["trades"]:
+            L.append(f"| {t['entry_time'][:16]} | {t['sym']} | {t['side']} | {t['exit_time'][:16]} | {t['reason']} | {_fmt(t['pnl'])} $ |")
+    else:
+        L.append("- Aucun trade pour l'instant.")
+    return "\n".join(L)
+
+
 def write_report():
     from run import load_state
     os.makedirs(DOCS, exist_ok=True)
@@ -279,6 +295,9 @@ def write_report():
     out.append("## Sommaire\n1. Verdict\n2. Test en direct\n3. Backtest de validation\n3 bis. Recherche d'amélioration (walk-forward)\n4. Audit du repo source\n5. Fonctionnement du simulateur\n6. Limites du test\n")
     out.append("## 1. Verdict\n\n" + _read("docs/verdict.md", "_à venir_"))
     out.append("## 2. Test en direct\n\n" + (live_section(s) if s else "_Pas encore démarré._"))
+    sp = os.path.join(ROOT, "state", "state_orb_v4.json")
+    if os.path.exists(sp):
+        out.append("\n### Test en direct parallèle : `orb_v4_live` (compte simulé séparé)\n\n" + parallel_section(json.load(open(sp))))
     out.append("\n## 3. Backtest de validation\n\n" + backtest_section(bt))
     rs = research_section()
     if rs:

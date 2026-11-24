@@ -46,6 +46,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           tick() {
             git pull -q --rebase -X theirs origin main || true
+            python run.py --state state/state_orb_v4.json --strategy orb_v4_live --no-report || echo "orb_v4_live a échoué (on continue)"
             python run.py || echo "run.py a échoué (on continue)"
             git add state data RAPPORT.md docs
             if ! git diff --cached --quiet; then
@@ -76,7 +77,8 @@ jobs:
           mark="state/notified_$day"
           if { [ "$hm" -ge 2150 ] || [ "$fin" = 1 ]; } && [ ! -f "$mark" ]; then
             git pull -q --rebase -X theirs origin main || true
-            python tools/notify.py --photo "$(python tools/infographic.py)" "Bilan du jour — FTMO paper trading"
+            python tools/notify.py --photo "$(python tools/infographic.py)" "Bilan du jour — aggressive_v1"
+            [ -f state/state_orb_v4.json ] && python tools/notify.py --photo "$(python tools/infographic.py state/state_orb_v4.json)" "Bilan du jour — orb_v4_live (test parallèle)"
             if [ "$fin" = 1 ]; then python tools/notify.py --report "Test terminé : rapport complet"; fi
             touch "$mark"; git add "$mark"; git commit -q -m "notif: $day"
             for i in 1 2 3; do git push -q && break; sleep 5; git pull -q --rebase -X theirs origin main; done

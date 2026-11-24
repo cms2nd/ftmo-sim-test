@@ -61,6 +61,14 @@ Aucune.
 
 Aucun.
 
+### Test en direct parallèle : `orb_v4_live` (compte simulé séparé)
+
+Même moteur, mêmes règles FTMO et mêmes dates que le test principal. Paramètres figés issus du walk-forward 1 an sur prix broker (stop au bord du range, objectif 3 R, EURUSD / GER40 / or).
+
+- Statut : **EN COURS**
+- Solde : **25 000.00 $** — equity 25 000.00 $ — plancher 22 500.00 $ — dernière exécution 2026-11-24T22:06 UTC
+- Aucun trade pour l'instant.
+
 ## 3. Backtest de validation
 
 Backtest de `aggressive_v1` avec exactement le même moteur que le test en direct (règles FTMO, spread, commission, glissement pessimiste doublé sur les stops, plus haut/plus bas des bougies, coupe-circuits). Données : bougies 5 min Yahoo Finance (maximum gratuit ≈ 60 jours calendaires, soit 60 jours de trading). Une nouvelle tentative de 25 000 $ démarre le jour suivant chaque réussite, échec ou blocage.

@@ -121,7 +121,13 @@ def main(now=None, strategy=None):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--now", help="horodatage UTC ISO (tests)")
+    ap.add_argument("--state", default="", help="fichier d'état (test parallèle)")
+    ap.add_argument("--strategy", default="", help="stratégie pour un nouvel état")
+    ap.add_argument("--no-report", action="store_true")
     a = ap.parse_args()
-    main(datetime.fromisoformat(a.now) if a.now else None)
-    from report import write_report
-    write_report()
+    if a.state:
+        STATE = os.path.join(ROOT, a.state)
+    main(datetime.fromisoformat(a.now) if a.now else None, strategy=a.strategy or None)
+    if not a.no_report:
+        from report import write_report
+        write_report()
