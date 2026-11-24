@@ -1,0 +1,8 @@
+📊 Comparaison Yahoo vs Dukascopy (prix broker), 21/09 → 20/11
+
+aggressive_v1 : Yahoo −2 547 $ → Dukascopy +537 $ (≈ équilibre, +0,02 R/trade)
+orb_ref : −1 998 $ → +937 $
+orb_v4_trend : +2 964 $ → +2 565 $ (+0,11 R/trade, non confirmé sur 2 ans)
+orb_v2_tight : −4 978 $ → −2 254 $
+
+Spreads réels ≈ 2× plus faibles que dans mes backtests (sauf or). Mais pas d'avantage assez solide pour réussir FTMO de façon fiable. Test en direct : 25/11 → 01/12.
