@@ -310,6 +310,41 @@ Objectif : chercher honnêtement s'il existe une variante avec un **avantage ré
 
 </details>
 
+#### Données de qualité broker (Dukascopy) contre Yahoo — 21/09 → 20/11/2026, bougies 5 min
+
+Dukascopy publie gratuitement le bid et l'ask minute par minute. Les bougies sont calculées au prix milieu, et le spread réel de chaque bougie remplace le spread fixe de la config (le glissement et les commissions restent identiques). Le troisième jeu de données (« Dukascopy, spread fixe ») isole l'effet de la qualité des prix, sans l'effet du coût.
+
+**Ce qu'on apprend :**
+- Les spreads réels sont **plus faibles** que ceux de la config pour les indices et le FX (EURUSD ≈ 0,3 pip contre 1 pip). Ils sont en revanche **plus élevés** pour l'or.
+- Le plus gros écart ne vient pas du spread mais **des prix eux-mêmes** : avec le même spread fixe, `aggressive_v1` passe de −10 R (Yahoo) à −1 R (Dukascopy). Les bougies Yahoo des contrats à terme (NQ=F, YM=F) ne sont pas les CFD cotés par un broker : les plus hauts et plus bas diffèrent, et donc les stops touchés aussi.
+- Avec les prix de broker, `aggressive_v1` et `orb_ref` sont **à l'équilibre** (+0,02 à +0,03 R par trade), pas gagnants. `orb_v4_trend` reste la seule variante nettement positive (+0,11 R/trade, 90 trades), mais elle était déjà négative sur 2 ans en walk-forward (bougies 1 h). Deux mois ne suffisent pas à conclure.
+- Sur la période, il y a 0 ou 1 challenge réussi par variante et par jeu de données.
+
+
+| Instrument | Spread médian réel | Spread médian à l'ouverture | Spread config |
+|---|---:|---:|---:|
+| US100 | 1.4528 | 0.9685 | 2 |
+| US30 | 1.9788 | 1.4932 | 3 |
+| XAUUSD | 0.566 | 0.542 | 0.35 |
+| GER40 | 1.6416 | 1.1438 | 2 |
+| EURUSD | 2.8e-05 | 2.8e-05 | 0.0001 |
+| GBPUSD | 5.8e-05 | 5.6e-05 | 0.00012 |
+
+| Stratégie | Données | Trades | R/trade | Profit factor | P&L net | Challenges réussis / terminés |
+|---|---|---:|---:|---:|---:|---:|
+| `aggressive_v1` | Yahoo, spread fixe pessimiste | 93 | -0.110 | 0.81 | -2 547.17 $ | 0 / 3 |
+| `aggressive_v1` | Dukascopy, spread réel | 96 | 0.022 | 1.04 | 537.47 $ | 1 / 2 |
+| `aggressive_v1` | Dukascopy, spread fixe pessimiste | 96 | -0.011 | 0.98 | -261.47 $ | 1 / 3 |
+| `orb_ref` | Yahoo, spread fixe pessimiste | 114 | -0.070 | 0.87 | -1 998.27 $ | 0 / 2 |
+| `orb_ref` | Dukascopy, spread réel | 128 | 0.029 | 1.06 | 936.72 $ | 0 / 1 |
+| `orb_ref` | Dukascopy, spread fixe pessimiste | 127 | 0.019 | 1.04 | 591.68 $ | 0 / 1 |
+| `orb_v4_trend` | Yahoo, spread fixe pessimiste | 69 | 0.172 | 1.35 | 2 964.05 $ | 1 / 2 |
+| `orb_v4_trend` | Dukascopy, spread réel | 90 | 0.114 | 1.25 | 2 564.96 $ | 1 / 2 |
+| `orb_v4_trend` | Dukascopy, spread fixe pessimiste | 92 | 0.136 | 1.32 | 3 120.17 $ | 1 / 2 |
+| `orb_v2_tight` | Yahoo, spread fixe pessimiste | 137 | -0.145 | 0.75 | -4 978.44 $ | 0 / 3 |
+| `orb_v2_tight` | Dukascopy, spread réel | 137 | -0.066 | 0.88 | -2 254.07 $ | 1 / 4 |
+| `orb_v2_tight` | Dukascopy, spread fixe pessimiste | 137 | -0.067 | 0.87 | -2 277.66 $ | 1 / 4 |
+
 #### Contrôles complémentaires
 
 | Contrôle | Résultat |

@@ -221,6 +221,16 @@ def research_section():
         for a in w["attempts"]:
             L.append(f"| {a['attempt']} | {a['status']} | {a['start']} | {a['end']} | {a['days']} | {_fmt(a['balance'])} | {a['reason']} |")
         L.append("\n</details>")
+    dk = os.path.join(DOCS, "research", "duka_compare.json")
+    if os.path.exists(dk):
+        d = json.load(open(dk))
+        L.append("\n" + _read("docs/research/duka.md"))
+        L.append("\n| Instrument | Spread médian réel | Spread médian à l'ouverture | Spread config |\n|---|---:|---:|---:|")
+        for x in d["spreads"]:
+            L.append(f"| {x['sym']} | {x['median']:.5g} | {x['open_median']:.5g} | {x['config']:.5g} |")
+        L.append("\n| Stratégie | Données | Trades | R/trade | Profit factor | P&L net | Challenges réussis / terminés |\n|---|---|---:|---:|---:|---:|---:|")
+        for x in d["runs"]:
+            L.append(f"| `{x['strategy']}` | {x['data']} | {x['n']} | {_fmt(x['exp_R'], 3)} | {_fmt(x['pf'])} | {_fmt(x['pnl'])} $ | {x['n_pass']} / {x['n_completed']} |")
     L.append("\n" + _read("docs/research/conclusion.md"))
     return "\n".join(L)
 

@@ -1,0 +1,192 @@
+{
+ "spreads": [
+  {
+   "sym": "US100",
+   "median": 1.4528,
+   "p90": 1.4952,
+   "open_median": 0.9685,
+   "config": 2.0
+  },
+  {
+   "sym": "US30",
+   "median": 1.9788,
+   "p90": 2.022,
+   "open_median": 1.4932,
+   "config": 3.0
+  },
+  {
+   "sym": "XAUUSD",
+   "median": 0.566,
+   "p90": 0.764,
+   "open_median": 0.542,
+   "config": 0.35
+  },
+  {
+   "sym": "GER40",
+   "median": 1.6416,
+   "p90": 2.668,
+   "open_median": 1.1438,
+   "config": 2.0
+  },
+  {
+   "sym": "EURUSD",
+   "median": 2.8e-05,
+   "p90": 4e-05,
+   "open_median": 2.8e-05,
+   "config": 0.0001
+  },
+  {
+   "sym": "GBPUSD",
+   "median": 5.8e-05,
+   "p90": 7.8e-05,
+   "open_median": 5.6e-05,
+   "config": 0.00012
+  }
+ ],
+ "runs": [
+  {
+   "strategy": "aggressive_v1",
+   "data": "Yahoo, spread fixe pessimiste",
+   "n": 93,
+   "exp_R": -0.11,
+   "win": 0.366,
+   "pf": 0.81,
+   "tot_R": -10.2,
+   "pnl": -2547.17,
+   "n_pass": 0,
+   "n_completed": 3
+  },
+  {
+   "strategy": "aggressive_v1",
+   "data": "Dukascopy, spread réel",
+   "n": 96,
+   "exp_R": 0.022,
+   "win": 0.417,
+   "pf": 1.04,
+   "tot_R": 2.1,
+   "pnl": 537.47,
+   "n_pass": 1,
+   "n_completed": 2
+  },
+  {
+   "strategy": "aggressive_v1",
+   "data": "Dukascopy, spread fixe pessimiste",
+   "n": 96,
+   "exp_R": -0.011,
+   "win": 0.406,
+   "pf": 0.98,
+   "tot_R": -1.0,
+   "pnl": -261.47,
+   "n_pass": 1,
+   "n_completed": 3
+  },
+  {
+   "strategy": "orb_ref",
+   "data": "Yahoo, spread fixe pessimiste",
+   "n": 114,
+   "exp_R": -0.07,
+   "win": 0.386,
+   "pf": 0.87,
+   "tot_R": -8.0,
+   "pnl": -1998.27,
+   "n_pass": 0,
+   "n_completed": 2
+  },
+  {
+   "strategy": "orb_ref",
+   "data": "Dukascopy, spread réel",
+   "n": 128,
+   "exp_R": 0.029,
+   "win": 0.414,
+   "pf": 1.06,
+   "tot_R": 3.7,
+   "pnl": 936.72,
+   "n_pass": 0,
+   "n_completed": 1
+  },
+  {
+   "strategy": "orb_ref",
+   "data": "Dukascopy, spread fixe pessimiste",
+   "n": 127,
+   "exp_R": 0.019,
+   "win": 0.409,
+   "pf": 1.04,
+   "tot_R": 2.4,
+   "pnl": 591.68,
+   "n_pass": 0,
+   "n_completed": 1
+  },
+  {
+   "strategy": "orb_v4_trend",
+   "data": "Yahoo, spread fixe pessimiste",
+   "n": 69,
+   "exp_R": 0.172,
+   "win": 0.464,
+   "pf": 1.35,
+   "tot_R": 11.9,
+   "pnl": 2964.05,
+   "n_pass": 1,
+   "n_completed": 2
+  },
+  {
+   "strategy": "orb_v4_trend",
+   "data": "Dukascopy, spread réel",
+   "n": 90,
+   "exp_R": 0.114,
+   "win": 0.456,
+   "pf": 1.25,
+   "tot_R": 10.3,
+   "pnl": 2564.96,
+   "n_pass": 1,
+   "n_completed": 2
+  },
+  {
+   "strategy": "orb_v4_trend",
+   "data": "Dukascopy, spread fixe pessimiste",
+   "n": 92,
+   "exp_R": 0.136,
+   "win": 0.478,
+   "pf": 1.32,
+   "tot_R": 12.5,
+   "pnl": 3120.17,
+   "n_pass": 1,
+   "n_completed": 2
+  },
+  {
+   "strategy": "orb_v2_tight",
+   "data": "Yahoo, spread fixe pessimiste",
+   "n": 137,
+   "exp_R": -0.145,
+   "win": 0.401,
+   "pf": 0.75,
+   "tot_R": -19.9,
+   "pnl": -4978.44,
+   "n_pass": 0,
+   "n_completed": 3
+  },
+  {
+   "strategy": "orb_v2_tight",
+   "data": "Dukascopy, spread réel",
+   "n": 137,
+   "exp_R": -0.066,
+   "win": 0.438,
+   "pf": 0.88,
+   "tot_R": -9.0,
+   "pnl": -2254.07,
+   "n_pass": 1,
+   "n_completed": 4
+  },
+  {
+   "strategy": "orb_v2_tight",
+   "data": "Dukascopy, spread fixe pessimiste",
+   "n": 137,
+   "exp_R": -0.067,
+   "win": 0.438,
+   "pf": 0.87,
+   "tot_R": -9.1,
+   "pnl": -2277.66,
+   "n_pass": 1,
+   "n_completed": 4
+  }
+ ]
+}
