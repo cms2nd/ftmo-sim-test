@@ -18,7 +18,7 @@ concurrency:
 jobs:
   download:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 170
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +29,10 @@ jobs:
         with: {python-version: "3.12", cache: pip}
       - run: pip install -r requirements.txt
       - run: python tools/dukascopy.py --start ${{ inputs.start }} --end ${{ inputs.end }} --symbols ${{ matrix.sym }}
+        timeout-minutes: 140
       - uses: actions/upload-artifact@v4
         if: always()
-        with: {name: "duka-${{ matrix.sym }}", path: data/duka/}
+        with: {name: "duka-${{ matrix.sym }}", path: "data/duka/${{ matrix.sym }}_5m.csv.gz"}
 
   commit:
     needs: download
