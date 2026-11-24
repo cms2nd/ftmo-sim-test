@@ -1,0 +1,94 @@
+name: dukascopy-history
+# Télécharge 2 ans de bougies Dukascopy (bid/ask 1 min -> 5 min + spread réel), un job par (instrument, mois).
+# Relancer tant que des morceaux restent : seuls les morceaux sans fichier .done sont retéléchargés.
+on:
+  workflow_dispatch:
+    inputs:
+      chain: {description: "Se relancer tant qu'il reste des morceaux (true/false)", default: "true"}
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: duka-history
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.p.outputs.matrix }}
+      n: ${{ steps.p.outputs.n }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt
+      - id: p
+        run: |
+          m=$(python tools/duka_history.py plan)
+          echo "matrix=$m" >> "$GITHUB_OUTPUT"
+          echo "n=$(echo "$m" | python -c 'import json,sys;print(len(json.load(sys.stdin)))')" >> "$GITHUB_OUTPUT"
+
+  download:
+    needs: plan
+    if: ${{ needs.plan.outputs.n != '0' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt
+      - name: Téléchargement ${{ matrix.tag }}
+        timeout-minutes: 150
+        run: |
+          f=data/duka/parts/${{ matrix.tag }}.csv.gz
+          mkdir -p data/duka/parts
+          python tools/dukascopy.py --start ${{ matrix.start }} --end ${{ matrix.end }} --symbols ${{ matrix.sym }} --out $f | tee log.txt
+          # terminé seulement si aucune heure/journée manquante
+          if grep -q "heures manquantes après nouvelles tentatives : 0" log.txt; then touch data/duka/parts/${{ matrix.tag }}.done; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: part-${{ matrix.tag }}
+          path: data/duka/parts/${{ matrix.tag }}.*
+          if-no-files-found: ignore
+
+  commit:
+    needs: [plan, download]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip}
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with: {path: data/duka/parts, pattern: "part-*", merge-multiple: true}
+      - name: Commit des morceaux + fusion
+        run: |
+          git config user.name "ftmo-sim-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ls data/duka/parts | wc -l
+          python tools/duka_history.py merge
+          git add data/duka
+          git diff --cached --quiet && exit 0
+          git commit -q -m "data: historique Dukascopy ($(ls data/duka/parts/*.done 2>/dev/null | wc -l) morceaux terminés)"
+          for i in 1 2 3 4 5; do git push -q && exit 0; sleep $((i*5)); git pull -q --rebase -X theirs || true; done
+          exit 1
+      - name: Relance s'il reste des morceaux
+        if: ${{ inputs.chain == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git pull -q --rebase -X theirs || true
+          left=$(python tools/duka_history.py plan | python -c 'import json,sys;print(len(json.load(sys.stdin)))')
+          echo "morceaux restants : $left"
+          [ "$left" = 0 ] || gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/duka-history.yml/dispatches" -f ref=main -f 'inputs[chain]=true'

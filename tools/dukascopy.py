@@ -141,6 +141,7 @@ if __name__ == "__main__":
     ap.add_argument("--start", required=True)
     ap.add_argument("--end", required=True)
     ap.add_argument("--symbols", default=",".join(SYMS))
+    ap.add_argument("--out", default="", help="fichier de sortie (un seul symbole)")
     ap.add_argument("--probe", action="store_true", help="1 heure par instrument, juste pour tester l'accès")
     a = ap.parse_args()
     s, e = date.fromisoformat(a.start), date.fromisoformat(a.end)
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     for sym in a.symbols.split(","):
         t0 = time.time()
-        b = build_from_candles(sym, s, e, os.path.join(OUT, f"{sym}_5m.csv.gz"))
+        b = build_from_candles(sym, s, e, a.out or os.path.join(OUT, f"{sym}_5m.csv.gz"))
         print(f"{sym}: heures manquantes après nouvelles tentatives : {len(MISSING)}", flush=True)
         MISSING.clear()
         print(f"{sym}: {len(b)} bougies, spread moyen {b['spread_avg'].mean() if len(b) else float('nan'):.5f} ({time.time() - t0:.0f}s)", flush=True)
