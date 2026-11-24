@@ -1,10 +1,10 @@
 name: ftmo-simulation
 
-# Toutes les 5 min, lun-ven, 06:00-21:55 UTC (sessions Londres + New York).
+# Toutes les 5 min (minutes 2,7,12...), lun-ven, 06:02-21:57 UTC (sessions Londres + New York).
 # Le cron GitHub peut avoir plusieurs minutes de retard: run.py en tient compte.
 on:
   schedule:
-    - cron: "*/5 6-21 * * 1-5"
+    - cron: "2-59/5 6-21 * * 1-5"
   workflow_dispatch:
 
 permissions:
