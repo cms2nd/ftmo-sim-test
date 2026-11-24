@@ -1,0 +1,8 @@
+- **Données gratuites ≠ prix FTMO** : Yahoo fournit des contrats à terme (NQ=F pour US100, YM=F pour US30, GC=F pour l'or), l'indice DAX au comptant (^GDAXI, heures d'ouverture Xetra uniquement) et un flux FX agrégé. Les CFD FTMO (MT5/cTrader) ont leurs propres prix, spreads variables (plus larges à l'ouverture et pendant les annonces) et un financement overnight (sans objet ici, tout est clôturé chaque jour). Les données Yahoo des futures peuvent avoir ~10 min de retard et des bougies manquantes.
+- **Bougies 5 min** : l'ordre réel des prix à l'intérieur d'une bougie est inconnu ; l'hypothèse « stop d'abord » est pessimiste mais pas exacte. FTMO mesure l'equity tick à tick ; ici le pire prix de chaque bougie est utilisé, ce qui s'en approche.
+- **Cron GitHub Actions** : retards fréquents de 5 à 20 min, voire exécutions sautées aux heures chargées ; les entrées peuvent donc être manquées (jamais prises en retard au-delà de 15 min).
+- **Échantillon minuscule** : ~60 jours de trading et ~100 trades en backtest ; 3 jours en direct. Aucune conclusion statistique solide n'est possible sur 3 jours.
+- **Fenêtre de test en direct** : 25–27 novembre 2026 = semaine de Thanksgiving (marchés US fermés le jeudi 26, séance courte le vendredi 27) : volumes et volatilité atypiques, moins d'opportunités sur US100.
+- **Calendrier macro** codé à la main (NFP calculé, CPI/Fed/BCE listés) : dates à vérifier, annonces secondaires ignorées.
+- **Conversion EUR/USD** du GER40 fixée à 1,08 ; levier 1:100 appliqué uniformément (FTMO applique des leviers plus faibles sur certains instruments).
+- Le simulateur n'est pas validé contre un compte FTMO réel ; il reproduit les règles telles que décrites dans la mission.

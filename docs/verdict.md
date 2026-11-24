@@ -1,0 +1,11 @@
+**Non. Avec `aggressive_v1` telle quelle, la probabilité réaliste de passer le challenge FTMO 1-Step 25k en 3 jours est quasi nulle, et elle reste faible même sans limite de temps.**
+
+Pourquoi :
+1. **Les chiffres ne collent pas.** Atteindre +2 500 $ en 3 jours avec un risque de 250 $ par trade demande ≈ +10 R nets en 3 jours. La stratégie prend ≈ 1,8 trade par jour (une seule cassure par instrument et par séance), soit ≈ 5–6 trades en 3 jours : même avec un taux de réussite de 100 % à 2 R on plafonne vers +2 500 / +2 800 $, et sur l'historique le taux de réussite est d'environ 38 %.
+2. **Aucun avantage statistique démontré.** Sur 60 jours de trading et ≈ 100 trades, le profit factor est < 1 (P&L net négatif après frais). La seule période un peu positive est celle qui a servi à choisir les instruments ; la période de validation hors échantillon est nettement perdante. Toutes les fenêtres glissantes de 3 jours du backtest échouent à atteindre l'objectif.
+3. **Les coupe-circuits demandés protègent du « challenge échoué », pas de l'échec économique.** Aucune règle FTMO n'a été violée en backtest (perte du jour plafonnée à 600 $, refus des trades trop risqués), mais la règle « pas de trade si distance au plancher < 3 × risque » **fige le compte** dès ≈ 1 750 $ de baisse depuis le plus haut : c'est la cause de toutes les tentatives terminées. Le compte n'est jamais « recalé » ; il devient inutilisable, ce qui coûte autant que les 199 €.
+4. **Le Best Day Rule et l'arrêt à +1 250 $/jour** imposent de répartir le gain sur ≥ 2 bons jours : impossible à garantir avec 1–2 trades par jour.
+
+Ce qu'il faudrait pour avoir une chance : une stratégie avec un avantage mesuré sur des centaines de trades (pas 100), testée sur plusieurs années de données (payantes ou données 1 h de Yahoo sur 2 ans), et un objectif sans contrainte de 3 jours (le 1-Step n'a pas de limite de temps : viser 2–6 semaines à 0,5 % de risque par trade est bien plus réaliste que « agressif en 3 jours »).
+
+Le test en direct de 3 jours (section 2) ne changera pas ce verdict, quel que soit son résultat : 3 jours de trading sont statistiquement insignifiants.
