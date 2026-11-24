@@ -156,7 +156,40 @@ def backtest_section(bt):
              f"≈ **{_fmt(full['expected_payout_per_attempt_usd'])} $**. Espérance nette par tentative ≈ "
              f"**{_fmt(full['expected_payout_per_attempt_usd'] - full['fee_per_attempt_usd'])} $**.")
     L.append("\n![Backtest](docs/equity_backtest.png)\n")
+    L.append(weekly_section(bt.get("weekly")))
     L.append(bt.get("tuning_note", ""))
+    return "\n".join(L)
+
+
+def weekly_section(wk):
+    if not wk:
+        return ""
+    L = ["### Backtest semaine par semaine (un challenge neuf de 25 000 $ chaque lundi, 5 jours de marché)\n",
+         "Même moteur, mêmes frais et coupe-circuits que le test en direct. Chaque semaine est indépendante. "
+         "Semaine du 14/09 : US100 n'a de données qu'à partir du 16/09 et son ATR n'est disponible qu'en fin de semaine.\n",
+         "| Semaine | Issue | P&L | Solde final | Solde le plus bas (clôtures) | Trades (gagnants) | Meilleur jour | Pire jour |",
+         "|---|---|---:|---:|---:|---:|---:|---:|"]
+    for w in wk:
+        L.append(f"| {w['week']} → {w['end']} | {w['status']} | {_fmt(w['pnl'])} $ | {_fmt(w['balance'])} $ | "
+                 f"{_fmt(w['min_balance'])} $ | {w['trades']} ({w['wins']}) | {_fmt(w['best_day'])} $ | {_fmt(w['worst_day'])} $ |")
+    n = len(wk)
+    pos = sum(1 for w in wk if w["pnl"] > 0)
+    passed = sum(1 for w in wk if w["status"] == "RÉUSSI")
+    tot = sum(w["pnl"] for w in wk)
+    best = max(wk, key=lambda w: w["pnl"])
+    worst = min(wk, key=lambda w: w["pnl"])
+    L.append("")
+    L.append(f"**Bilan sur {n} semaines :** {passed} réussite(s) du challenge, {pos} semaine(s) en gain, {n - pos} en perte ; "
+             f"P&L cumulé {_fmt(tot)} $ (moyenne {_fmt(tot / n)} $/semaine) ; meilleure semaine {best['week']} "
+             f"({_fmt(best['pnl'])} $), pire semaine {worst['week']} ({_fmt(worst['pnl'])} $). "
+             f"Objectif requis : +2 500 $ en une semaine.\n")
+    for w in wk:
+        if w["week"] == "2026-11-16":
+            L.append("<details><summary>Détail des trades — semaine du 16/11 (dernière semaine complète)</summary>\n")
+            L.append("| Sortie (UTC) | Instr. | Sens | Motif | P&L | Solde |\n|---|---|---|---|---:|---:|")
+            for d in w["detail"]:
+                L.append(f"| {d[0]} | {d[1]} | {d[2]} | {d[3]} | {_fmt(d[4])} | {_fmt(d[5])} |")
+            L.append("\n</details>\n")
     return "\n".join(L)
 
 

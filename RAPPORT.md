@@ -64,18 +64,18 @@ Backtest de `aggressive_v1` avec exactement le même moteur que le test en direc
 
 | Période | Dates | Trades | % gagnants | Profit factor | P&L net | Tentatives terminées | Réussies | Échouées/bloquées |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| Ajustement | 2026-09-02 → 2026-10-23 (38 j) | 63 | 41 % | 1.03 | 242.44 $ | 1 | 0 | 1 |
-| Validation (hors échantillon) | 2026-10-26 → 2026-11-24 (22 j) | 45 | 33 % | 0.70 | -2 091.43 $ | 2 | 0 | 2 |
-| Complet | 2026-09-02 → 2026-11-24 (60 j) | 108 | 38 % | 0.88 | -1 848.99 $ | 3 | 0 | 3 |
+| Ajustement | 2026-09-02 → 2026-10-23 (38 j) | 63 | 41 % | 1.03 | 242.32 $ | 1 | 0 | 1 |
+| Validation (hors échantillon) | 2026-10-26 → 2026-11-24 (22 j) | 45 | 33 % | 0.70 | -2 091.26 $ | 2 | 0 | 2 |
+| Complet | 2026-09-02 → 2026-11-24 (60 j) | 108 | 38 % | 0.88 | -1 848.94 $ | 3 | 0 | 3 |
 
 **Détail des tentatives (période complète)**
 
 | # | Statut | Début | Fin | Jours | Solde final | Trades | Raison |
 |---|---|---|---|---:|---:|---:|---|
-| 1 | BLOQUÉ | 2026-09-02 | 2026-10-05 | 24 | 24 152.63 | 34 | bloqué: distance au plancher 599 $ < 3 × risque |
-| 2 | BLOQUÉ | 2026-10-06 | 2026-11-05 | 23 | 24 469.90 | 46 | bloqué: distance au plancher 621 $ < 3 × risque |
-| 3 | BLOQUÉ | 2026-11-06 | 2026-11-18 | 9 | 23 914.88 | 20 | bloqué: distance au plancher 334 $ < 3 × risque |
-| 4 | INACHEVÉ | 2026-11-19 | 2026-11-24 | 4 | 25 613.56 | 8 | fin des données |
+| 1 | BLOQUÉ | 2026-09-02 | 2026-10-05 | 24 | 24 152.69 | 34 | bloqué: distance au plancher 599 $ < 3 × risque |
+| 2 | BLOQUÉ | 2026-10-06 | 2026-11-05 | 23 | 24 469.73 | 46 | bloqué: distance au plancher 622 $ < 3 × risque |
+| 3 | BLOQUÉ | 2026-11-06 | 2026-11-18 | 9 | 23 914.99 | 20 | bloqué: distance au plancher 334 $ < 3 × risque |
+| 4 | INACHEVÉ | 2026-11-19 | 2026-11-24 | 4 | 25 613.60 | 8 | fin des données |
 
 - **Taux de réussite** : 0/3 tentatives terminées (0 %) ; **en 3 jours ou moins** : 0 %.
 - **Départ un jour quelconque, fenêtre de 3 jours** (58 fenêtres glissantes) : en perte : 37, en gain : 21. Aucune fenêtre n'atteint +2 500 $.
@@ -84,6 +84,44 @@ Backtest de `aggressive_v1` avec exactement le même moteur que le test en direc
 - **Coût** : 3 tentatives × 199 € (≈ 214.92 $) = **644.76 $** de frais, pour 0 compte(s) financé(s) ; gain potentiel attendu par tentative (90 % × 2 500 $ × taux de réussite) ≈ **0.00 $**. Espérance nette par tentative ≈ **-214.92 $**.
 
 ![Backtest](docs/equity_backtest.png)
+
+### Backtest semaine par semaine (un challenge neuf de 25 000 $ chaque lundi, 5 jours de marché)
+
+Même moteur, mêmes frais et coupe-circuits que le test en direct. Chaque semaine est indépendante. Semaine du 14/09 : US100 n'a de données qu'à partir du 16/09 et son ATR n'est disponible qu'en fin de semaine.
+
+| Semaine | Issue | P&L | Solde final | Solde le plus bas (clôtures) | Trades (gagnants) | Meilleur jour | Pire jour |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 2026-09-14 → 2026-09-18 | objectif non atteint | 781.39 $ | 25 781.39 $ | 25 000.00 $ | 7 (4) | 617.62 $ | -483.10 $ |
+| 2026-09-21 → 2026-09-25 | objectif non atteint | -783.31 $ | 24 216.69 $ | 24 147.60 $ | 9 (3) | 260.93 $ | -485.92 $ |
+| 2026-09-28 → 2026-10-02 | objectif non atteint | -352.89 $ | 24 647.11 $ | 24 647.11 $ | 11 (4) | 736.40 $ | -498.15 $ |
+| 2026-10-05 → 2026-10-09 | objectif non atteint | -1 010.37 $ | 23 989.63 $ | 23 989.63 $ | 10 (2) | 122.91 $ | -486.10 $ |
+| 2026-10-12 → 2026-10-16 | objectif non atteint | 514.59 $ | 25 514.59 $ | 25 000.00 $ | 10 (5) | 830.62 $ | -527.20 $ |
+| 2026-10-19 → 2026-10-23 | objectif non atteint | 1 099.28 $ | 26 099.28 $ | 24 756.04 $ | 11 (6) | 586.89 $ | -271.90 $ |
+| 2026-10-26 → 2026-10-30 | objectif non atteint | -511.13 $ | 24 488.87 $ | 24 488.87 $ | 9 (3) | 251.99 $ | -495.10 $ |
+| 2026-11-02 → 2026-11-06 | objectif non atteint | -1 000.71 $ | 23 999.29 $ | 23 891.26 $ | 10 (2) | 226.92 $ | -494.26 $ |
+| 2026-11-09 → 2026-11-13 | objectif non atteint | -119.60 $ | 24 880.40 $ | 24 880.40 $ | 12 (5) | 972.92 $ | -489.87 $ |
+| 2026-11-16 → 2026-11-20 | objectif non atteint | -543.28 $ | 24 456.72 $ | 23 674.66 $ | 12 (4) | 566.85 $ | -488.66 $ |
+
+**Bilan sur 10 semaines :** 0 réussite(s) du challenge, 3 semaine(s) en gain, 7 en perte ; P&L cumulé -1 926.03 $ (moyenne -192.60 $/semaine) ; meilleure semaine 2026-10-19 (1 099.28 $), pire semaine 2026-10-05 (-1 010.37 $). Objectif requis : +2 500 $ en une semaine.
+
+<details><summary>Détail des trades — semaine du 16/11 (dernière semaine complète)</summary>
+
+| Sortie (UTC) | Instr. | Sens | Motif | P&L | Solde |
+|---|---|---|---|---:|---:|
+| 2026-11-16T10:45 | GER40 | long | stop-loss | -246.97 | 24 753.03 |
+| 2026-11-16T20:45 | US100 | short | clôture fin de journée | 146.93 | 24 899.96 |
+| 2026-11-17T10:10 | EURUSD | long | stop-loss | -239.15 | 24 660.81 |
+| 2026-11-17T10:40 | GER40 | short | stop-loss | -245.59 | 24 415.22 |
+| 2026-11-18T09:10 | GER40 | long | stop-loss | -246.94 | 24 163.73 |
+| 2026-11-18T10:10 | EURUSD | short | stop-loss | -241.72 | 23 926.56 |
+| 2026-11-19T09:15 | GER40 | long | stop-loss | -245.92 | 23 674.66 |
+| 2026-11-19T10:45 | EURUSD | long | objectif | 322.84 | 24 003.48 |
+| 2026-11-19T20:05 | US100 | short | objectif | 489.93 | 24 493.41 |
+| 2026-11-20T10:00 | GER40 | short | objectif | 456.41 | 24 946.57 |
+| 2026-11-20T12:45 | EURUSD | short | stop-loss | -244.08 | 24 705.73 |
+| 2026-11-20T15:20 | US100 | long | stop-loss | -249.01 | 24 456.72 |
+
+</details>
 
 **Ajustement (une seule fois, sur la période d'ajustement uniquement, avant le 23/10/2026) :**
 1. Backtest instrument par instrument avec les paramètres par défaut (range 15 min, fenêtre d'entrée 2 h, RR 2, filtre ATR 0,08–0,60, filtre de tendance clôture de la veille). Profit factor sur la période d'ajustement : US100 1,07 ; GER40 1,02 ; EURUSD 1,31 ; GBPUSD 0,74 ; US30 0,41 ; XAUUSD 0,24.

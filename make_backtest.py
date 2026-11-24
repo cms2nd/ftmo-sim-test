@@ -15,11 +15,43 @@ def slim(r):
     return {k: v for k, v in r.items() if k not in ("trades", "breakers")}
 
 
+WEEKS = ["2026-09-14", "2026-09-21", "2026-09-28", "2026-10-05", "2026-10-12",
+         "2026-10-19", "2026-10-26", "2026-11-02", "2026-11-09", "2026-11-16"]
+
+
+def weekly_runs():
+    """Un challenge neuf de 25 000 $ par semaine (lundi -> vendredi), mêmes règles."""
+    from datetime import date, timedelta
+    from collections import defaultdict
+    out = []
+    for w in WEEKS:
+        end = (date.fromisoformat(w) + timedelta(days=4)).isoformat()
+        r = B.run(start=w, end=end)
+        a = r["attempts"][0]
+        bal, low = 25000.0, 25000.0
+        for t in r["trades"]:
+            bal = t["balance"]; low = min(low, bal)
+        daily = defaultdict(float)
+        for t in r["trades"]:
+            daily[t["exit_time"][:10]] += t["pnl"]
+        out.append({"week": w, "end": end, "status": a["status"] if a["status"] != "INACHEVÉ" else "objectif non atteint",
+                    "reason": a["reason"] if a["status"] != "INACHEVÉ" else "",
+                    "balance": a["balance"], "pnl": round(a["balance"] - 25000, 2), "trades": len(r["trades"]),
+                    "wins": sum(1 for t in r["trades"] if t["pnl"] > 0), "min_balance": round(low, 2),
+                    "best_day": round(max(daily.values()), 2) if daily else 0.0,
+                    "worst_day": round(min(daily.values()), 2) if daily else 0.0,
+                    "breakers": len(r["breakers"]),
+                    "detail": [[t["exit_time"][:16], t["sym"], t["side"], t["reason"], t["pnl"], t["balance"]] for t in r["trades"]]})
+        print(w, out[-1]["status"], out[-1]["pnl"], out[-1]["trades"])
+    return out
+
+
 def main():
     full = B.run()
     tune = B.run(end=TUNE_END)
     valid = B.run(start=VALID_START)
     counts, n = B.rolling_windows()
+    weekly = weekly_runs()
     out = {
         "intro": ("Backtest de `aggressive_v1` avec exactement le même moteur que le test en direct (règles FTMO, "
                   "spread, commission, glissement pessimiste doublé sur les stops, plus haut/plus bas des bougies, "
@@ -28,6 +60,7 @@ def main():
                   "le jour suivant chaque réussite, échec ou blocage.\n"),
         "full": slim(full), "tune": slim(tune), "valid": slim(valid),
         "rolling3": {"counts": counts, "n": n},
+        "weekly": weekly,
         "tuning_note": open(os.path.join(os.path.dirname(__file__), "docs", "ajustement.md")).read()
         if os.path.exists(os.path.join(os.path.dirname(__file__), "docs", "ajustement.md")) else "",
     }
