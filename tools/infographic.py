@@ -139,6 +139,45 @@ def wf_card():
     return p
 
 
+def smc_card():
+    v = json.load(open(os.path.join(ROOT, "docs", "research", "smc_validation.json")))
+    fig = _fig(11)
+    fig.text(0.06, 0.955, "Or · Smart Money Concept · test pré-enregistré", color=MUTED, fontsize=11)
+    fig.text(0.06, 0.915, "Développement vs validation", color=FG, fontsize=22, weight="bold")
+    rows = [("SMC pur (smc_gold)", v["S1_dev"]["exp_R"], v["S1_val"]["exp_R"]),
+            ("Cassure asiatique (S2)", v["S2_dev"]["exp_R"], v["S2_val"]["exp_R"])]
+    ax = fig.add_axes([0.36, 0.66, 0.58, 0.2], facecolor=BG)
+    for i, (lab, a, b) in enumerate(rows):
+        ax.barh(i - 0.2, a, height=0.38, color=MUTED, label="Développement (2025-26)" if i == 0 else None)
+        ax.barh(i + 0.2, b, height=0.38, color=BLUE, label="Validation, jamais vue (2024-25)" if i == 0 else None)
+    ax.set_yticks(range(len(rows))); ax.set_yticklabels([r[0] for r in rows], color=FG, fontsize=10)
+    ax.invert_yaxis(); ax.axvline(0, color=MUTED, lw=1)
+    ax.set_title("Gain moyen par trade (R = risque de 250 $)", color=MUTED, fontsize=10, loc="left")
+    ax.tick_params(axis="x", colors=MUTED, labelsize=8)
+    for sp in ax.spines.values(): sp.set_color("#334155")
+    ax.legend(frameon=False, labelcolor=FG, fontsize=8, loc="lower right")
+    mv, md = v["S2_montecarlo_val"], v["S2_montecarlo_dev"]
+    _tile(fig, 0.06, 0.49, 0.42, 0.095, "Challenges réussis (dév.)", f"{md['pass_rate'] * 100:.0f} %", GREEN)
+    _tile(fig, 0.52, 0.49, 0.42, 0.095, "Challenges réussis (valid.)", f"{mv['pass_rate'] * 100:.0f} %", RED)
+    ax = fig.add_axes([0.1, 0.25, 0.84, 0.19], facecolor=BG)
+    import numpy as np
+    for k, col, lab in (("S2_trades_dev", MUTED, "dév."), ("S2_trades_val", BLUE, "validation")):
+        r = np.cumsum([x["R"] for x in v[k]])
+        ax.plot(range(len(r)), r, color=col, lw=1.6, label=lab)
+    ax.axhline(0, color="#334155", lw=1)
+    ax.set_title("Cassure asiatique : R cumulé, trade après trade", color=MUTED, fontsize=9, loc="left")
+    ax.legend(frameon=False, labelcolor=FG, fontsize=8)
+    for sp in ax.spines.values(): sp.set_color("#334155")
+    ax.tick_params(colors=MUTED, labelsize=7)
+    txt = ("• Aucune étude scientifique ne valide le SMC.\n"
+           "• Retournement après balayage : absent sur les 2 années.\n"
+           "• Le seul effet trouvé était un faux positif :\n   +0,19 R en dév. → −0,01 R en validation.\n"
+           "• Verdict : pas d'avantage sur l'or avec ces règles.")
+    fig.text(0.06, 0.035, txt, color=FG, fontsize=11, linespacing=1.55)
+    p = os.path.join(OUT, "smc_or.png"); os.makedirs(OUT, exist_ok=True); fig.savefig(p, facecolor=BG); plt.close(fig)
+    return p
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
-    print(research_card() if a == ["research"] else wf_card() if a == ["wf"] else daily_card())
+    print(research_card() if a == ["research"] else wf_card() if a == ["wf"] else smc_card() if a == ["smc"] else daily_card())

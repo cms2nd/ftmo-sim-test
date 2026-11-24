@@ -253,6 +253,8 @@ def research_section():
         L.append("\n| Famille (meilleurs paramètres de chaque tranche) | Trades | R/trade | Profit factor | Total R |\n|---|---:|---:|---:|---:|")
         for k, v in po.items():
             L.append(f"| `{k}` | {v['n']} | {_fmt(v['exp_R'], 3)} | {_fmt(v['pf'])} | {_fmt(v['tot_R'], 1)} |")
+    if os.path.exists(os.path.join(DOCS, "research", "smc_validation.json")):
+        L.append("\n" + _read("docs/research/smc_resultats.md"))
     L.append("\n" + _read("docs/research/conclusion.md"))
     return "\n".join(L)
 
