@@ -345,6 +345,73 @@ Dukascopy publie gratuitement le bid et l'ask minute par minute. Les bougies son
 | `orb_v2_tight` | Dukascopy, spread réel | 137 | -0.066 | 0.88 | -2 254.07 $ | 1 / 4 |
 | `orb_v2_tight` | Dukascopy, spread fixe pessimiste | 137 | -0.067 | 0.87 | -2 277.66 $ | 1 / 4 |
 
+#### Backtest sur 1 an de prix broker (Dukascopy, bougies 5 min, spread réel) — walk-forward
+
+**Méthode.** Pour chaque tranche de test de 2 mois (de mars à novembre 2026), on regarde uniquement les 4 mois précédents. On y choisit la stratégie parmi 6 familles (49 combinaisons de paramètres), ses paramètres et les instruments à trader (ceux qui gagnaient en ajustement). Le choix est ensuite appliqué aux 2 mois suivants, jamais vus. Des challenges FTMO s'enchaînent sur toute la période de test, avec les mêmes règles, frais et coupe-circuits que le test en direct.
+
+**Résultat 1 : choisir à chaque tranche la « meilleure » stratégie ne marche pas.** En ajustement, la stratégie retenue gagne entre +16 et +31 R. En test, elle perd 4 fois sur 5 : −0,08 R par trade sur 330 trades, et 0 challenge réussi sur 6. C'est le signe d'un sur-ajustement : la meilleure combinaison du passé est surtout celle qui a eu de la chance.
+
+**Résultat 2 : une seule famille tient, `orb_v4_trend`.** Elle prend la cassure du range d'ouverture seulement dans le sens de la tendance (au-dessus de la clôture de la veille et de la moyenne sur 20 jours). Ses paramètres et instruments sont ré-ajustés à chaque tranche. En test, sur 275 trades, elle fait +0,07 R par trade (profit factor 1,14). Elle réussit 3 challenges sur 7 terminés, pour un P&L net de +4 269 $ après frais.
+
+**Pourquoi il ne faut pas encore y croire :**
+- l'avantage n'est **pas statistiquement significatif** (t ≈ 0,9 ; il faudrait environ t ≥ 2) ;
+- il vient de 3 tranches sur 5 ; novembre (3 semaines, +14,6 R) pèse à lui seul les trois quarts du total ;
+- j'ai mis cette famille en avant **après** l'avoir vue gagner sur septembre-novembre : ce choix est lui-même une sélection ;
+- sur 2 ans de bougies 1 h (Yahoo), la même famille était **négative** hors échantillon (−0,03 R/trade).
+
+**Conclusion.** Avec de vraies données de broker, aucune stratégie testée n'a d'avantage démontré. `orb_v4_trend` est la seule piste qui mérite un test en direct plus long, et pas encore de l'argent réel.
+
+
+**Sélection libre entre les 6 familles** : 330 trades, -0.082 R/trade, profit factor 0.84, challenges réussis 0 / 6, P&L net -6 309.34 $
+
+| Test | Stratégie | Paramètres | Instruments | R ajustement | R test (trades) |
+|---|---|---|---|---:|---:|
+| 2026-03-01 → 2026-04-30 | `orb_v5_grid` | {'OR_MINUTES': 30, 'TREND': 'prev', 'RR': 3.0, 'STOP_MODE': 'or'} | XAUUSD, GER40, US30 | 20.5 | 2.5 (75) |
+| 2026-05-01 → 2026-06-30 | `orb_v3_retest` | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 2.0} | GBPUSD, US30, US100, XAUUSD | 20.6 | -14.1 (94) |
+| 2026-07-01 → 2026-08-31 | `orb_v4_trend` | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 2.0} | EURUSD, US100, US30, XAUUSD | 30.8 | -5.4 (67) |
+| 2026-09-01 → 2026-10-31 | `orb_v4_trend` | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 2.0} | EURUSD, US100, XAUUSD, US30 | 15.7 | -3.5 (77) |
+| 2026-11-01 → 2026-11-20 | `mr_v1` | {'EXT_ATR': 0.4, 'TARGET_FRAC': 1.0} | US30, US100 | 21.3 | -6.4 (17) |
+
+| # | Statut | Début | Fin | Jours | Solde final |
+|---|---|---|---|---:|---:|
+| 1 | BLOQUÉ | 2026-03-02 | 2026-05-12 | 52 | 25 615.53 |
+| 2 | BLOQUÉ | 2026-05-13 | 2026-06-11 | 22 | 24 235.50 |
+| 3 | BLOQUÉ | 2026-06-12 | 2026-06-30 | 13 | 22 958.54 |
+| 4 | BLOQUÉ | 2026-07-01 | 2026-08-03 | 24 | 23 490.12 |
+| 5 | BLOQUÉ | 2026-08-04 | 2026-09-09 | 27 | 24 305.63 |
+| 6 | BLOQUÉ | 2026-09-10 | 2026-11-09 | 43 | 23 454.37 |
+| 7 | INACHEVÉ | 2026-11-10 | 2026-11-20 | 9 | 24 631.02 |
+
+**`orb_v4_trend` seule** : 275 trades, 0.069 R/trade, profit factor 1.14, challenges réussis 3 / 7, P&L net 4 268.85 $
+
+| Test | Stratégie | Paramètres | Instruments | R ajustement | R test (trades) |
+|---|---|---|---|---:|---:|
+| 2026-03-01 → 2026-04-30 | `orb_v4_trend` | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 3.0} | US100, US30, GER40, GBPUSD | 11.8 | 5.5 (61) |
+| 2026-05-01 → 2026-06-30 | `orb_v4_trend` | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 3.0} | GER40, US100 | 18.3 | 7.8 (46) |
+| 2026-07-01 → 2026-08-31 | `orb_v4_trend` | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 2.0} | EURUSD, US100, US30, XAUUSD | 30.8 | -5.4 (67) |
+| 2026-09-01 → 2026-10-31 | `orb_v4_trend` | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 2.0} | EURUSD, US100, XAUUSD, US30 | 15.7 | -3.5 (77) |
+| 2026-11-01 → 2026-11-20 | `orb_v4_trend` | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 3.0} | EURUSD, GER40, XAUUSD | 13.0 | 14.6 (24) |
+
+| # | Statut | Début | Fin | Jours | Solde final |
+|---|---|---|---|---:|---:|
+| 1 | BLOQUÉ | 2026-03-02 | 2026-03-17 | 12 | 23 631.69 |
+| 2 | RÉUSSI | 2026-03-18 | 2026-04-30 | 32 | 27 738.70 |
+| 3 | RÉUSSI | 2026-05-01 | 2026-05-26 | 18 | 27 775.33 |
+| 4 | BLOQUÉ | 2026-05-27 | 2026-06-18 | 17 | 23 326.79 |
+| 5 | BLOQUÉ | 2026-06-19 | 2026-08-03 | 32 | 24 343.06 |
+| 6 | BLOQUÉ | 2026-08-04 | 2026-09-09 | 27 | 24 305.63 |
+| 7 | RÉUSSI | 2026-09-10 | 2026-11-11 | 45 | 27 554.43 |
+| 8 | INACHEVÉ | 2026-11-12 | 2026-11-20 | 7 | 25 593.20 |
+
+| Famille (meilleurs paramètres de chaque tranche) | Trades | R/trade | Profit factor | Total R |
+|---|---:|---:|---:|---:|
+| `orb_ref` | 290 | -0.062 | 0.87 | -18.1 |
+| `orb_v2_tight` | 263 | -0.100 | 0.84 | -26.4 |
+| `orb_v3_retest` | 266 | -0.110 | 0.82 | -29.4 |
+| `orb_v4_trend` | 275 | 0.069 | 1.14 | 19.0 |
+| `orb_v5_grid` | 311 | 0.015 | 1.03 | 4.7 |
+| `mr_v1` | 130 | -0.014 | 0.98 | -1.8 |
+
 #### Contrôles complémentaires
 
 | Contrôle | Résultat |

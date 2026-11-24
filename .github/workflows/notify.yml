@@ -24,7 +24,8 @@ jobs:
         run: |
           case "$KIND" in
             text)     printf '%s' "$MSG" | python tools/notify.py - ;;
-            research) python tools/notify.py --photo "$(python tools/infographic.py research)" "Comparaison prix Yahoo / broker"
+            research) python tools/notify.py --photo "$(python tools/infographic.py research)" "Comparaison prix Yahoo / broker" ;;
+            wf)       python tools/notify.py --photo "$(python tools/infographic.py wf)" "Backtest 1 an sur prix broker (walk-forward)"
                       python tools/notify.py --report ;;
             report)   python tools/notify.py --report ;;
             *)        python tools/notify.py --photo "$(python tools/infographic.py)" "Bilan du jour" ;;

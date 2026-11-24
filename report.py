@@ -195,7 +195,7 @@ def weekly_section(wk):
 
 def research_section():
     import glob
-    files = sorted(glob.glob(os.path.join(DOCS, "research", "wf_*.json")))
+    files = sorted(f for f in glob.glob(os.path.join(DOCS, "research", "wf_*.json")) if "wf_duka" not in f)
     if not files:
         return ""
     L = [_read("docs/research/methode.md"),
@@ -231,6 +231,28 @@ def research_section():
         L.append("\n| Stratégie | Données | Trades | R/trade | Profit factor | P&L net | Challenges réussis / terminés |\n|---|---|---:|---:|---:|---:|---:|")
         for x in d["runs"]:
             L.append(f"| `{x['strategy']}` | {x['data']} | {x['n']} | {_fmt(x['exp_R'], 3)} | {_fmt(x['pf'])} | {_fmt(x['pnl'])} $ | {x['n_pass']} / {x['n_completed']} |")
+    wf = os.path.join(DOCS, "research", "wf_duka.json")
+    if os.path.exists(wf):
+        L.append("\n" + _read("docs/research/wf_duka.md"))
+        for lab, fn in (("Sélection libre entre les 6 familles", "wf_duka.json"), ("`orb_v4_trend` seule", "wf_duka_v4.json")):
+            fp = os.path.join(DOCS, "research", fn)
+            if not os.path.exists(fp):
+                continue
+            w = json.load(open(fp)); o = w["oos"]; c = w.get("challenge", {})
+            L.append(f"\n**{lab}** : {o['n']} trades, {_fmt(o['exp_R'], 3)} R/trade, profit factor {_fmt(o['pf'])}, "
+                     f"challenges réussis {c.get('n_pass')} / {c.get('n_completed')}, P&L net {_fmt(c.get('net_pnl'))} $\n")
+            L.append("| Test | Stratégie | Paramètres | Instruments | R ajustement | R test (trades) |\n|---|---|---|---|---:|---:|")
+            for f in w["folds"]:
+                if f.get("strategy"):
+                    L.append(f"| {f['test']} | `{f['strategy']}` | {f['params']} | {', '.join(f['instruments'])} | "
+                             f"{f['train_stats']['tot_R']} | {f['test_stats']['tot_R']} ({f['test_stats']['n']}) |")
+            L.append("\n| # | Statut | Début | Fin | Jours | Solde final |\n|---|---|---|---|---:|---:|")
+            for a in w.get("attempts", []):
+                L.append(f"| {a['attempt']} | {a['status']} | {a['start']} | {a['end']} | {a['days']} | {_fmt(a['balance'])} |")
+        po = json.load(open(wf))["per_strategy_oos"]
+        L.append("\n| Famille (meilleurs paramètres de chaque tranche) | Trades | R/trade | Profit factor | Total R |\n|---|---:|---:|---:|---:|")
+        for k, v in po.items():
+            L.append(f"| `{k}` | {v['n']} | {_fmt(v['exp_R'], 3)} | {_fmt(v['pf'])} | {_fmt(v['tot_R'], 1)} |")
     L.append("\n" + _read("docs/research/conclusion.md"))
     return "\n".join(L)
 

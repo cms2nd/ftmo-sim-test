@@ -111,5 +111,34 @@ def research_card():
     return p
 
 
+def wf_card():
+    R = os.path.join(ROOT, "docs", "research")
+    allw, v4 = json.load(open(os.path.join(R, "wf_duka.json"))), json.load(open(os.path.join(R, "wf_duka_v4.json")))
+    fig = _fig(11)
+    fig.text(0.06, 0.955, "Backtest 1 an · prix broker · hors échantillon", color=MUTED, fontsize=11)
+    fig.text(0.06, 0.915, "Mars → novembre 2026", color=FG, fontsize=22, weight="bold")
+    c1, c2 = allw["challenge"], v4["challenge"]
+    _tile(fig, 0.06, 0.79, 0.42, 0.095, "Meilleure strat. à chaque tranche", f"{allw['oos']['exp_R']:+.2f} R/trade", RED)
+    _tile(fig, 0.52, 0.79, 0.42, 0.095, "Challenges réussis", f"{c1['n_pass']} / {c1['n_completed']}", RED)
+    _tile(fig, 0.06, 0.68, 0.42, 0.095, "orb_v4_trend seule", f"{v4['oos']['exp_R']:+.2f} R/trade", GREEN)
+    _tile(fig, 0.52, 0.68, 0.42, 0.095, "Challenges réussis", f"{c2['n_pass']} / {c2['n_completed']}", GREEN)
+    ax = fig.add_axes([0.1, 0.36, 0.84, 0.27], facecolor=BG)
+    for w, col, lab in ((allw, RED, "Sélection libre"), (v4, GREEN, "orb_v4_trend")):
+        pts = w.get("curve", [])
+        if pts:
+            ax.plot([datetime.fromisoformat(str(p[0])) for p in pts], [p[2] for p in pts], color=col, lw=1.6, label=lab)
+    ax.set_title("Solde du challenge en cours (chaque chute = nouvelle tentative)", color=MUTED, fontsize=9, loc="left")
+    ax.legend(frameon=False, labelcolor=FG, fontsize=9)
+    for sp in ax.spines.values(): sp.set_color("#334155")
+    ax.tick_params(colors=MUTED, labelsize=7); fig.autofmt_xdate()
+    txt = ("• Choisir la meilleure stratégie du passé = sur-ajustement :\n   gagnante en ajustement, perdante en test 4 fois sur 5.\n"
+           f"• orb_v4_trend : {_money(c2['net_pnl'])} net, mais non significatif (t ≈ 0,9),\n   gains concentrés sur novembre, négative sur 2 ans en 1 h.\n"
+           "• Verdict : aucun avantage démontré. Piste à suivre :\n   orb_v4_trend en test en direct prolongé, pas d'argent réel.")
+    fig.text(0.06, 0.05, txt, color=FG, fontsize=11, linespacing=1.6)
+    p = os.path.join(OUT, "backtest_1an.png"); os.makedirs(OUT, exist_ok=True); fig.savefig(p, facecolor=BG); plt.close(fig)
+    return p
+
+
 if __name__ == "__main__":
-    print(research_card() if sys.argv[1:] == ["research"] else daily_card())
+    a = sys.argv[1:]
+    print(research_card() if a == ["research"] else wf_card() if a == ["wf"] else daily_card())
