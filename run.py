@@ -49,7 +49,7 @@ def compute_end(first_day: date) -> str:
     while True:
         if d.weekday() < 5:
             n += 1
-            if n == 3:
+            if n == 5:
                 break
         d += timedelta(days=1)
     return min(d.isoformat(), C.HARD_STOP_DATE)

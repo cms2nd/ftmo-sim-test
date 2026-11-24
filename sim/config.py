@@ -7,10 +7,10 @@ LONDON = ZoneInfo("Europe/London")
 
 ACTIVE_STRATEGY = "aggressive_v1"
 
-# --- Date de fin codée en dur (3 jours de marché à partir du 25/11/2026) ---
-# Mer 25/11, Jeu 26/11 (Thanksgiving: marchés US fermés, Europe ouverte), Ven 27/11.
+# --- Date de fin codée en dur (1 semaine = 5 jours de marché à partir du 25/11/2026) ---
+# Mer 25, Jeu 26 (Thanksgiving: US fermés), Ven 27, Lun 30/11, Mar 01/12.
 LIVE_START_DATE = "2026-11-25"
-LIVE_END_DATE = "2026-11-27"      # inclus, heure de Prague
+LIVE_END_DATE = "2026-12-01"      # inclus, heure de Prague
 # Garde-fou: si le premier lancement a lieu plus tard, run.py fixe une fin
 # à 3 jours de marché après le premier lancement (stockée dans state.json),
 # sans jamais dépasser HARD_STOP_DATE.

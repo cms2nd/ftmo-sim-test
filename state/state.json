@@ -35,7 +35,7 @@
  ],
  "start_time": "2026-11-24T13:14:13.465556+00:00",
  "strategy": "aggressive_v1",
- "live_end_date": "2026-11-27",
+ "live_end_date": "2026-12-01",
  "first_run": "2026-11-24T13:14:13.465556+00:00",
  "run_log": [
   {

@@ -24,11 +24,11 @@ Pourquoi :
 
 Ce qu'il faudrait pour avoir une chance : une stratégie avec un avantage mesuré sur des centaines de trades (pas 100), testée sur plusieurs années de données (payantes ou données 1 h de Yahoo sur 2 ans), et un objectif sans contrainte de 3 jours (le 1-Step n'a pas de limite de temps : viser 2–6 semaines à 0,5 % de risque par trade est bien plus réaliste que « agressif en 3 jours »).
 
-Le test en direct de 3 jours (section 2) ne changera pas ce verdict, quel que soit son résultat : 3 jours de trading sont statistiquement insignifiants.
+Le test en direct d'une semaine (5 jours de marché, section 2) ne changera pas ce verdict, quel que soit son résultat : 5 jours de trading restent statistiquement insignifiants. Sur le backtest, **aucune des 56 fenêtres glissantes de 5 jours n'atteint +2 500 $** (24 terminent en gain, 31 en perte, 1 compte bloqué par le coupe-circuit plancher).
 
 ## 2. Test en direct
 
-- Stratégie active : `aggressive_v1` — premier lancement : 2026-11-24T13:14:13.465556+00:00 UTC — fin du test : **2026-11-27** (heure de Prague)
+- Stratégie active : `aggressive_v1` — premier lancement : 2026-11-24T13:14:13.465556+00:00 UTC — fin du test : **2026-12-01** (heure de Prague)
 - Dernière exécution : 2026-11-24T13:14:13.465556+00:00 UTC
 - Solde : **25 000.00 $** — equity : 25 000.00 $ — plancher perte max : 22 500.00 $ — plus haut solde de fin de journée : 25 000.00 $
 
@@ -122,7 +122,7 @@ Unités de temps : bougies 5 min (intraday), 1 jour (scanner quotidien). Signaux
 ## 5. Fonctionnement du simulateur
 
 - **Workflow** `.github/workflows/simulate.yml` : cron toutes les 5 min du lundi au vendredi, 06:00–21:55 UTC (sessions de Londres et New York), plus lancement manuel. Chaque exécution : `python run.py` → récupère les bougies 5 min (Yahoo Finance via `yfinance`, gratuit, sans clé), rejoue les bougies clôturées pas encore traitées, applique la stratégie, le simulateur et le moteur de règles FTMO, met à jour `state/state.json`, `data/`, `RAPPORT.md`, `docs/equity_live.png`, puis commite et pousse.
-- **Arrêt automatique** : la date de fin est codée en dur (`LIVE_END_DATE = 2026-11-27` dans `sim/config.py`) et vérifiée à chaque exécution ; si le premier lancement est postérieur au 25/11, la fin est fixée à 3 jours de marché après ce lancement (stockée dans l'état). Après la fin, le workflow se désactive lui-même.
+- **Arrêt automatique** : la date de fin est codée en dur (`LIVE_END_DATE = 2026-12-01`, soit 1 semaine = 5 jours de marché du 25/11 au 01/12 dans `sim/config.py`) et vérifiée à chaque exécution ; si le premier lancement est postérieur au 25/11, la fin est fixée à 5 jours de marché après ce lancement (stockée dans l'état). Après la fin, le workflow se désactive lui-même.
 - **Retard du cron** : aucune entrée n'est prise sur une bougie clôturée depuis plus de 15 min ; les bougies manquées servent seulement à gérer stops et objectifs via leurs plus hauts / plus bas. Pas de scalping : 1 entrée max par instrument et par jour.
 - **Exécution simulée** : achat au prix + demi-spread + glissement, vente au prix − demi-spread − glissement ; glissement doublé sur les stops ; ouverture en gap au-delà du stop remplie au prix d'ouverture ; si stop et objectif sont dans la même bougie, le stop est retenu. Spreads (US100 2 pts, GER40 2 pts, US30 3 pts, or 0,35 $, EURUSD 1 pip, GBPUSD 1,2 pip) et commissions (≈ 5 $/lot A/R en FX, 0 sur indices) volontairement au-dessus des valeurs typiques FTMO.
 - **Moteur de règles FTMO** (`sim/engine.py`) : perte journalière 750 $ (référence = solde à 00:00 Prague, equity flottante au pire prix de la bougie), plancher trailing = plus haut solde de fin de journée − 2 500 $ (ne descend jamais), objectif 27 500 $ + règle du meilleur jour (≤ 50 %), levier 1:100, clôture de tout à 21:45 Prague (21:30 le vendredi). Violation → « CHALLENGE ÉCHOUÉ » + raison + heure, puis observation sans trading.
@@ -135,8 +135,8 @@ Unités de temps : bougies 5 min (intraday), 1 jour (scanner quotidien). Signaux
 - **Données gratuites ≠ prix FTMO** : Yahoo fournit des contrats à terme (NQ=F pour US100, YM=F pour US30, GC=F pour l'or), l'indice DAX au comptant (^GDAXI, heures d'ouverture Xetra uniquement) et un flux FX agrégé. Les CFD FTMO (MT5/cTrader) ont leurs propres prix, spreads variables (plus larges à l'ouverture et pendant les annonces) et un financement overnight (sans objet ici, tout est clôturé chaque jour). Les données Yahoo des futures peuvent avoir ~10 min de retard et des bougies manquantes.
 - **Bougies 5 min** : l'ordre réel des prix à l'intérieur d'une bougie est inconnu ; l'hypothèse « stop d'abord » est pessimiste mais pas exacte. FTMO mesure l'equity tick à tick ; ici le pire prix de chaque bougie est utilisé, ce qui s'en approche.
 - **Cron GitHub Actions** : retards fréquents de 5 à 20 min, voire exécutions sautées aux heures chargées ; les entrées peuvent donc être manquées (jamais prises en retard au-delà de 15 min).
-- **Échantillon minuscule** : ~60 jours de trading et ~100 trades en backtest ; 3 jours en direct. Aucune conclusion statistique solide n'est possible sur 3 jours.
-- **Fenêtre de test en direct** : 25–27 novembre 2026 = semaine de Thanksgiving (marchés US fermés le jeudi 26, séance courte le vendredi 27) : volumes et volatilité atypiques, moins d'opportunités sur US100.
+- **Échantillon minuscule** : ~60 jours de trading et ~100 trades en backtest ; 5 jours en direct. Aucune conclusion statistique solide n'est possible sur 3 jours.
+- **Fenêtre de test en direct** : 25 novembre – 1er décembre 2026, dont la semaine de Thanksgiving (marchés US fermés le jeudi 26, séance courte le vendredi 27) : volumes et volatilité atypiques, moins d'opportunités sur US100.
 - **Calendrier macro** codé à la main (NFP calculé, CPI/Fed/BCE listés) : dates à vérifier, annonces secondaires ignorées.
 - **Conversion EUR/USD** du GER40 fixée à 1,08 ; levier 1:100 appliqué uniformément (FTMO applique des leviers plus faibles sur certains instruments).
 - Le simulateur n'est pas validé contre un compte FTMO réel ; il reproduit les règles telles que décrites dans la mission.
