@@ -1,6 +1,6 @@
 # RAPPORT — Simulation FTMO Challenge 1-Step 25 000 $ (paper trading)
 
-> **EN ATTENTE** — le test en direct n'a pas encore démarré.
+> **EN COURS** — solde 25 000.00 $ — perte du jour 0.00 $ / 750 $ — distance au plancher 2 500.00 $ — mis à jour 2026-11-24T13:14 UTC
 
 ⚠️ Simulation uniquement : aucun argent réel, aucun compte de courtage ni FTMO connecté.
 
@@ -28,7 +28,35 @@ Le test en direct de 3 jours (section 2) ne changera pas ce verdict, quel que so
 
 ## 2. Test en direct
 
-_Pas encore démarré._
+- Stratégie active : `aggressive_v1` — premier lancement : 2026-11-24T13:14:13.465556+00:00 UTC — fin du test : **2026-11-27** (heure de Prague)
+- Dernière exécution : 2026-11-24T13:14:13.465556+00:00 UTC
+- Solde : **25 000.00 $** — equity : 25 000.00 $ — plancher perte max : 22 500.00 $ — plus haut solde de fin de journée : 25 000.00 $
+
+![Courbe d'equity live](docs/equity_live.png)
+
+### P&L par jour (trades clôturés, jour de Prague)
+
+| Jour | P&L clôturé |
+|---|---:|
+| — | — |
+
+### Règle du meilleur jour
+
+Aucun jour positif pour l'instant.
+
+### Positions ouvertes
+
+Aucune.
+
+### Journal des trades
+
+| Instr. | Sens | Entrée (UTC) | Prix | Sortie (UTC) | Prix | Motif | P&L | Solde |
+|---|---|---|---:|---|---:|---|---:|---:|
+| — | | | | | | aucun trade pour l'instant | | |
+
+### Coupe-circuits déclenchés
+
+Aucun.
 
 ## 3. Backtest de validation
 
