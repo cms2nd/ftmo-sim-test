@@ -1,11 +1,17 @@
 name: ftmo-simulation
 
-# Toutes les 5 min (minutes 2,7,12...), lun-ven, 06:02-21:57 UTC (sessions Londres + New York).
-# Le cron GitHub peut avoir plusieurs minutes de retard: run.py en tient compte.
+# Deux modes :
+#  - cron toutes les 5 min (lun-ven 06:02-21:57 UTC), si le planificateur GitHub le déclenche ;
+#  - mode boucle (workflow_dispatch avec loop=true) : un seul job exécute la simulation
+#    toutes les 5 min jusqu'à 5 h 40 ou 21:58 UTC, puis se relance lui-même s'il reste
+#    de la séance. Plan B car le planificateur GitHub ne déclenchait pas ce repo.
+# Le retard éventuel est géré par run.py (rejeu des bougies, pas d'entrée périmée).
 on:
   schedule:
     - cron: "2-59/5 6-21 * * 1-5"
   workflow_dispatch:
+    inputs:
+      loop: {description: "Mode boucle (true/false)", default: "false"}
 
 permissions:
   contents: write
@@ -18,7 +24,7 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -29,21 +35,41 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Exécution de la simulation (paper trading)
-        run: python run.py
-
-      - name: Commit de l'état
+      - name: Simulation (paper trading)
+        env:
+          LOOP: ${{ inputs.loop == 'true' }}
         run: |
           git config user.name "ftmo-sim-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state data RAPPORT.md docs
-          git diff --cached --quiet && exit 0
-          git commit -m "sim: $(date -u +'%Y-%m-%d %H:%M') UTC"
-          for i in 1 2 3 4; do
-            git push && exit 0
-            sleep $((i * 5)); git pull --rebase -X theirs || true
+          tick() {
+            git pull -q --rebase -X theirs origin main || true
+            python run.py || echo "run.py a échoué (on continue)"
+            git add state data RAPPORT.md docs
+            if ! git diff --cached --quiet; then
+              git commit -q -m "sim: $(date -u +'%Y-%m-%d %H:%M') UTC"
+              for i in 1 2 3 4; do git push -q && break; sleep $((i*5)); git pull -q --rebase -X theirs origin main || true; done
+            fi
+          }
+          start=$(date +%s)
+          while true; do
+            tick
+            [ "$LOOP" = "true" ] || break
+            now=$(date +%s); hm=$(date -u +%H%M)
+            if [ $((now - start)) -gt 20400 ] || [ "$hm" -ge 2158 ] || [ "$(date -u +%u)" -gt 5 ]; then break; fi
+            if python -c "import json,sys; sys.exit(0 if json.load(open('state/state.json')).get('test_finished') else 1)"; then break; fi
+            sleep $(( 300 - $(date +%s) % 300 + 60 ))   # prochaine minute x1 (bougie 5 min clôturée + délai Yahoo)
           done
-          exit 1
+
+      - name: Relance de la boucle (si séance pas finie)
+        if: ${{ inputs.loop == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hm=$(date -u +%H%M); dow=$(date -u +%u)
+          if python -c "import json,sys; sys.exit(0 if json.load(open('state/state.json')).get('test_finished') else 1)"; then exit 0; fi
+          if [ "$dow" -le 5 ] && [ "$hm" -lt 2150 ]; then
+            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/simulate.yml/dispatches" -f ref=main -f 'inputs[loop]=true'
+          fi
 
       - name: Arrêt automatique après la date de fin
         env:
