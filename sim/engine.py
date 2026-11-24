@@ -307,5 +307,13 @@ class Engine:
         for sym, b in bars.items():
             sig = self.strat.signal(sym, close_ts, b, self.s["strategy_mem"])
             if sig:
-                self.open(close_ts, sym, sig["side"], b["close"], sig["stop"], sig["target"], sig.get("tag", ""))
+                ref = sig.get("entry", b["close"])
+                p = self.open(close_ts, sym, sig["side"], ref, sig["stop"], sig["target"], sig.get("tag", ""))
+                if p is not None and "entry" in sig:
+                    # Ordre limite rempli dans la bougie: si le stop est aussi dans la bougie,
+                    # on suppose le pire (rempli puis stoppé).
+                    hs = self._inst(sym)["spread"] / 2
+                    if (p["side"] == "long" and b["low"] - hs <= p["stop"]) or \
+                       (p["side"] == "short" and b["high"] + hs >= p["stop"]):
+                        self.close(p, p["stop"] + (hs if p["side"] == "long" else -hs), close_ts, "stop-loss", stop=True)
         self.s["equity"] = self.s["balance"] + self._floating()

@@ -8,6 +8,7 @@
 1. Verdict
 2. Test en direct
 3. Backtest de validation
+3 bis. Recherche d'amélioration (walk-forward)
 4. Audit du repo source
 5. Fonctionnement du simulateur
 6. Limites du test
@@ -25,6 +26,8 @@ Pourquoi :
 Ce qu'il faudrait pour avoir une chance : une stratégie avec un avantage mesuré sur des centaines de trades (pas 100), testée sur plusieurs années de données (payantes ou données 1 h de Yahoo sur 2 ans), et un objectif sans contrainte de 3 jours (le 1-Step n'a pas de limite de temps : viser 2–6 semaines à 0,5 % de risque par trade est bien plus réaliste que « agressif en 3 jours »).
 
 Le test en direct d'une semaine (5 jours de marché, section 2) ne changera pas ce verdict, quel que soit son résultat : 5 jours de trading restent statistiquement insignifiants. Sur le backtest, **aucune des 56 fenêtres glissantes de 5 jours n'atteint +2 500 $** (24 terminent en gain, 31 en perte, 1 compte bloqué par le coupe-circuit plancher).
+
+**Mise à jour après la recherche (section 3 bis) :** 5 variantes testées en walk-forward sur 2 ans (≈ 3 000 trades hors échantillon). Aucune n'a d'espérance positive après frais. Le léger avantage brut de la cassure du range d'ouverture (≈ +0,035 R par trade) disparaît dans le spread et le glissement. Sans limite de temps, 1 à 2 challenges sur 10 sont réussis, mais par hasard (marche aléatoire), au bout de 30 à 50 jours. Ce n'est pas une méthode reproductible ni rentable.
 
 ## 2. Test en direct
 
@@ -129,6 +132,206 @@ Même moteur, mêmes frais et coupe-circuits que le test en direct. Chaque semai
 3. La période de validation (24/10 → 24/11/2026), jamais utilisée pour choisir, sert de test hors échantillon : elle est nettement **perdante** (PF ≈ 0,7), ce qui confirme que la sélection d'instruments relevait surtout du bruit sur un si petit échantillon.
 
 Note : un 4ᵉ instrument n'a pas été ajouté car aucun autre n'était positif ; réduire à 2 aurait été de la sur-optimisation.
+
+
+## 3 bis. Recherche d'amélioration (walk-forward sur 2 ans)
+
+Objectif : chercher honnêtement s'il existe une variante avec un **avantage réel**, sans sur-optimiser (les 4 points proposés).
+
+1. **Plus de données** : 2 ans de bougies **1 heure** Yahoo (juillet 2024 → novembre 2026) sur les 6 instruments, soit ≈ 10 fois plus de trades que les 60 jours en 5 min. Les données 15 min (60 jours) et 5 min servent de contrôle final. En 1 h, le range d'ouverture correspond à la première bougie de séance (Londres 08:00–09:00 ; New York **09:00–10:00 ET**, car Yahoo aligne les bougies sur l'heure pile, ce qui inclut 30 min de pré-ouverture). C'est une approximation de l'ORB 15 min.
+2. **Quelques variantes connues, chacune dans son propre fichier** (6 combinaisons de paramètres au plus par variante) :
+   - `orb_ref` : les règles d'aggressive_v1 telles quelles, mais sur les 6 instruments (référence) ;
+   - `orb_v2_tight` : stop plus serré (milieu du range, ou 0,15 / 0,25 ATR), objectif 1,5 ou 2 R ;
+   - `orb_v3_retest` : cassure confirmée, puis entrée par ordre limite sur le retest du niveau cassé ;
+   - `orb_v4_trend` : filtre de tendance de fond (clôture de la veille **et** moyenne 20 jours) ;
+   - `mr_v1` : autre famille, retour vers l'ouverture après un excès de début de séance (≥ 0,4–0,8 ATR) suivi d'une bougie de retournement.
+3. **Validation glissante (walk-forward)** : 8 plis trimestriels. Les paramètres sont choisis sur les 6 mois précédents, puis appliqués tels quels aux 3 mois suivants, jamais vus. Seuls les trades de test comptent dans les résultats. Les 6 instruments sont toujours utilisés (pas de choix d'instruments a posteriori).
+4. **Même objectif FTMO, sans limite de temps** : simulation continue sur toute la période de test (≈ 23 mois), avec le moteur, les frais, le glissement et les coupe-circuits du test en direct. On enchaîne les challenges de 25 000 $ (nouvelle tentative après réussite, échec ou blocage) et on mesure le taux de réussite, la durée et l'espérance nette par tentative (90 % × 2 500 $ × taux de réussite − 199 €).
+
+
+#### Résultats hors échantillon (trades de test uniquement, 2025-01 → 2026-11, bougies 1 h)
+
+| Stratégie | Trades | Espérance (R/trade) | % gagnants | Profit factor | Total R | Challenges terminés | Réussis | Taux | Jours moyens pour réussir | Espérance nette / tentative |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `mr_v1` | 126 | -0.159 | 36 % | 0.70 | -20.0 | 3 | 0 | 0 % | — | -214.92 $ |
+| `orb_ref` | 795 | -0.026 | 45 % | 0.92 | -21.0 | 11 | 2 | 18 % | 52.5 | 194.17 $ |
+| `orb_v2_tight` | 790 | -0.058 | 41 % | 0.88 | -46.0 | 15 | 1 | 7 % | 30.0 | -64.92 $ |
+| `orb_v3_retest` | 634 | -0.175 | 36 % | 0.68 | -110.9 | 20 | 0 | 0 % | — | -214.92 $ |
+| `orb_v4_trend` | 535 | -0.029 | 43 % | 0.93 | -15.3 | 9 | 1 | 11 % | 38.0 | 35.08 $ |
+
+<details><summary>Plis du walk-forward — <code>mr_v1</code></summary>
+
+| Test | Paramètres choisis (sur les 6 mois précédents) | R ajustement | R test (trades) |
+|---|---|---:|---:|
+| 2025-01-01 → 2025-03-31 | {'EXT_ATR': 0.8, 'TARGET_FRAC': 1.0} | -7.5 | -0.0 (6) |
+| 2025-04-01 → 2025-06-30 | {'EXT_ATR': 0.6, 'TARGET_FRAC': 0.6} | -8.9 | -0.8 (5) |
+| 2025-07-01 → 2025-09-30 | {'EXT_ATR': 0.4, 'TARGET_FRAC': 0.6} | -5.8 | -4.6 (23) |
+| 2025-10-01 → 2025-12-31 | {'EXT_ATR': 0.4, 'TARGET_FRAC': 0.6} | -5.5 | -2.9 (12) |
+| 2026-01-01 → 2026-03-31 | {'EXT_ATR': 0.6, 'TARGET_FRAC': 1.0} | -2.3 | 0.8 (12) |
+| 2026-04-01 → 2026-06-30 | {'EXT_ATR': 0.4, 'TARGET_FRAC': 0.6} | 1.7 | -1.0 (10) |
+| 2026-07-01 → 2026-09-30 | {'EXT_ATR': 0.4, 'TARGET_FRAC': 1.0} | -3.3 | -2.1 (34) |
+| 2026-10-01 → 2026-11-20 | {'EXT_ATR': 0.4, 'TARGET_FRAC': 1.0} | 1.6 | -9.4 (24) |
+
+| # | Statut | Début | Fin | Jours | Solde final | Raison |
+|---|---|---|---|---:|---:|---|
+| 1 | BLOQUÉ | 2025-01-01 | 2025-09-18 | 187 | 23 429.85 | bloqué: distance au plancher 587 $ < 3 × risque |
+| 2 | BLOQUÉ | 2025-09-19 | 2026-10-02 | 271 | 23 666.58 | bloqué: distance au plancher 674 $ < 3 × risque |
+| 3 | BLOQUÉ | 2026-10-05 | 2026-11-03 | 22 | 23 129.68 | bloqué: distance au plancher 630 $ < 3 × risque |
+| 4 | INACHEVÉ | 2026-11-04 | 2026-11-20 | 13 | 24 764.61 | fin des données |
+
+</details>
+
+<details><summary>Plis du walk-forward — <code>orb_ref</code></summary>
+
+| Test | Paramètres choisis (sur les 6 mois précédents) | R ajustement | R test (trades) |
+|---|---|---:|---:|
+| 2025-01-01 → 2025-03-31 | {'RR': 2.0} | -5.2 | 1.7 (106) |
+| 2025-04-01 → 2025-06-30 | {'RR': 2.0} | -15.5 | -4.6 (98) |
+| 2025-07-01 → 2025-09-30 | {'RR': 2.0} | -2.9 | -3.4 (112) |
+| 2025-10-01 → 2025-12-31 | {'RR': 2.0} | -8.0 | -5.6 (99) |
+| 2026-01-01 → 2026-03-31 | {'RR': 2.0} | -8.9 | -9.6 (105) |
+| 2026-04-01 → 2026-06-30 | {'RR': 2.0} | -15.2 | -7.7 (117) |
+| 2026-07-01 → 2026-09-30 | {'RR': 2.0} | -17.3 | -1.6 (100) |
+| 2026-10-01 → 2026-11-20 | {'RR': 2.0} | -9.4 | 9.7 (58) |
+
+| # | Statut | Début | Fin | Jours | Solde final | Raison |
+|---|---|---|---|---:|---:|---|
+| 1 | RÉUSSI | 2025-01-01 | 2025-04-10 | 72 | 27 619.53 | Objectif atteint (solde 27619.53) et règle du meilleur jour respectée (1022.09 ≤ 50 % de 8232.06) |
+| 2 | BLOQUÉ | 2025-04-11 | 2025-05-07 | 19 | 23 164.71 | bloqué: distance au plancher 665 $ < 3 × risque |
+| 3 | BLOQUÉ | 2025-05-08 | 2025-06-23 | 33 | 23 876.78 | bloqué: distance au plancher 557 $ < 3 × risque |
+| 4 | BLOQUÉ | 2025-06-24 | 2025-09-18 | 63 | 23 831.56 | bloqué: distance au plancher 497 $ < 3 × risque |
+| 5 | BLOQUÉ | 2025-09-19 | 2025-11-07 | 36 | 24 038.03 | bloqué: distance au plancher 734 $ < 3 × risque |
+| 6 | BLOQUÉ | 2025-11-10 | 2026-01-13 | 47 | 23 786.01 | bloqué: distance au plancher 674 $ < 3 × risque |
+| 7 | BLOQUÉ | 2026-01-14 | 2026-02-18 | 26 | 23 102.56 | bloqué: distance au plancher 305 $ < 3 × risque |
+| 8 | BLOQUÉ | 2026-02-19 | 2026-04-07 | 34 | 24 232.74 | bloqué: distance au plancher 628 $ < 3 × risque |
+| 9 | BLOQUÉ | 2026-04-08 | 2026-05-13 | 26 | 24 502.01 | bloqué: distance au plancher 665 $ < 3 × risque |
+| 10 | BLOQUÉ | 2026-05-14 | 2026-09-30 | 100 | 24 146.39 | bloqué: distance au plancher 730 $ < 3 × risque |
+| 11 | RÉUSSI | 2026-10-01 | 2026-11-16 | 33 | 27 646.46 | Objectif atteint (solde 27646.46) et règle du meilleur jour respectée (552.77 ≤ 50 % de 4255.82) |
+| 12 | INACHEVÉ | 2026-11-17 | 2026-11-20 | 4 | 24 770.93 | fin des données |
+
+</details>
+
+<details><summary>Plis du walk-forward — <code>orb_v2_tight</code></summary>
+
+| Test | Paramètres choisis (sur les 6 mois précédents) | R ajustement | R test (trades) |
+|---|---|---:|---:|
+| 2025-01-01 → 2025-03-31 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.25, 'RR': 2.0} | -0.0 | 0.9 (107) |
+| 2025-04-01 → 2025-06-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.25, 'RR': 1.5} | -11.8 | -8.4 (99) |
+| 2025-07-01 → 2025-09-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.25, 'RR': 1.5} | -7.7 | -13.3 (112) |
+| 2025-10-01 → 2025-12-31 | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 2.0} | -7.7 | -8.9 (98) |
+| 2026-01-01 → 2026-03-31 | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 2.0} | -4.3 | -12.8 (105) |
+| 2026-04-01 → 2026-06-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.25, 'RR': 2.0} | -6.2 | 5.2 (114) |
+| 2026-07-01 → 2026-09-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.25, 'RR': 2.0} | -0.6 | -10.5 (97) |
+| 2026-10-01 → 2026-11-20 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.25, 'RR': 1.5} | -0.6 | 1.9 (58) |
+
+| # | Statut | Début | Fin | Jours | Solde final | Raison |
+|---|---|---|---|---:|---:|---|
+| 1 | BLOQUÉ | 2025-01-01 | 2025-01-17 | 13 | 23 753.39 | bloqué: distance au plancher 749 $ < 3 × risque |
+| 2 | BLOQUÉ | 2025-01-20 | 2025-04-21 | 66 | 25 216.77 | bloqué: distance au plancher 712 $ < 3 × risque |
+| 3 | BLOQUÉ | 2025-04-22 | 2025-06-20 | 44 | 24 243.00 | bloqué: distance au plancher 680 $ < 3 × risque |
+| 4 | BLOQUÉ | 2025-06-23 | 2025-08-15 | 40 | 23 102.04 | bloqué: distance au plancher 602 $ < 3 × risque |
+| 5 | BLOQUÉ | 2025-08-18 | 2025-09-17 | 23 | 23 805.65 | bloqué: distance au plancher 569 $ < 3 × risque |
+| 6 | BLOQUÉ | 2025-09-18 | 2025-10-06 | 13 | 23 875.62 | bloqué: distance au plancher 740 $ < 3 × risque |
+| 7 | BLOQUÉ | 2025-10-07 | 2025-11-04 | 21 | 24 984.08 | bloqué: distance au plancher 600 $ < 3 × risque |
+| 8 | BLOQUÉ | 2025-11-05 | 2025-11-27 | 17 | 23 198.90 | bloqué: distance au plancher 650 $ < 3 × risque |
+| 9 | BLOQUÉ | 2025-11-28 | 2026-01-15 | 35 | 24 102.95 | bloqué: distance au plancher 635 $ < 3 × risque |
+| 10 | BLOQUÉ | 2026-01-16 | 2026-02-18 | 24 | 23 338.62 | bloqué: distance au plancher 623 $ < 3 × risque |
+| 11 | BLOQUÉ | 2026-02-19 | 2026-04-07 | 34 | 23 734.23 | bloqué: distance au plancher 568 $ < 3 × risque |
+| 12 | RÉUSSI | 2026-04-08 | 2026-05-19 | 30 | 27 744.30 | Objectif atteint (solde 27744.30) et règle du meilleur jour respectée (859.69 ≤ 50 % de 4813.23) |
+| 13 | BLOQUÉ | 2026-05-20 | 2026-07-01 | 31 | 24 259.02 | bloqué: distance au plancher 541 $ < 3 × risque |
+| 14 | BLOQUÉ | 2026-07-02 | 2026-08-21 | 37 | 23 986.62 | bloqué: distance au plancher 718 $ < 3 × risque |
+| 15 | BLOQUÉ | 2026-08-24 | 2026-09-29 | 27 | 23 345.71 | bloqué: distance au plancher 623 $ < 3 × risque |
+| 16 | INACHEVÉ | 2026-09-30 | 2026-11-20 | 38 | 25 315.21 | fin des données |
+
+</details>
+
+<details><summary>Plis du walk-forward — <code>orb_v3_retest</code></summary>
+
+| Test | Paramètres choisis (sur les 6 mois précédents) | R ajustement | R test (trades) |
+|---|---|---:|---:|
+| 2025-01-01 → 2025-03-31 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 3.0} | -11.8 | -17.4 (82) |
+| 2025-04-01 → 2025-06-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 3.0} | -21.8 | -21.0 (78) |
+| 2025-07-01 → 2025-09-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 2.0} | -27.5 | -5.5 (78) |
+| 2025-10-01 → 2025-12-31 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 2.0} | -17.9 | -23.5 (89) |
+| 2026-01-01 → 2026-03-31 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 3.0} | -22.4 | -3.9 (77) |
+| 2026-04-01 → 2026-06-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 3.0} | -23.2 | -14.6 (97) |
+| 2026-07-01 → 2026-09-30 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 3.0} | -19.5 | -18.4 (86) |
+| 2026-10-01 → 2026-11-20 | {'STOP_MODE': 'atr', 'STOP_ATR': 0.2, 'RR': 3.0} | -33.1 | -6.5 (47) |
+
+| # | Statut | Début | Fin | Jours | Solde final | Raison |
+|---|---|---|---|---:|---:|---|
+| 1 | BLOQUÉ | 2025-01-01 | 2025-01-13 | 9 | 23 817.29 | bloqué: distance au plancher 516 $ < 3 × risque |
+| 2 | BLOQUÉ | 2025-01-14 | 2025-02-28 | 34 | 23 681.61 | bloqué: distance au plancher 612 $ < 3 × risque |
+| 3 | BLOQUÉ | 2025-03-03 | 2025-03-21 | 15 | 23 248.84 | bloqué: distance au plancher 749 $ < 3 × risque |
+| 4 | BLOQUÉ | 2025-03-24 | 2025-04-09 | 13 | 23 758.48 | bloqué: distance au plancher 623 $ < 3 × risque |
+| 5 | BLOQUÉ | 2025-04-10 | 2025-05-07 | 20 | 24 403.64 | bloqué: distance au plancher 688 $ < 3 × risque |
+| 6 | BLOQUÉ | 2025-05-08 | 2025-06-17 | 29 | 23 450.44 | bloqué: distance au plancher 679 $ < 3 × risque |
+| 7 | BLOQUÉ | 2025-06-18 | 2025-06-30 | 9 | 23 046.36 | bloqué: distance au plancher 546 $ < 3 × risque |
+| 8 | BLOQUÉ | 2025-07-01 | 2025-09-09 | 51 | 25 166.67 | bloqué: distance au plancher 648 $ < 3 × risque |
+| 9 | BLOQUÉ | 2025-09-10 | 2025-10-01 | 16 | 23 201.53 | bloqué: distance au plancher 590 $ < 3 × risque |
+| 10 | BLOQUÉ | 2025-10-02 | 2025-11-18 | 34 | 23 145.76 | bloqué: distance au plancher 590 $ < 3 × risque |
+| 11 | BLOQUÉ | 2025-11-19 | 2025-12-04 | 12 | 23 082.97 | bloqué: distance au plancher 583 $ < 3 × risque |
+| 12 | BLOQUÉ | 2025-12-05 | 2025-12-29 | 17 | 23 368.15 | bloqué: distance au plancher 521 $ < 3 × risque |
+| 13 | BLOQUÉ | 2025-12-30 | 2026-01-26 | 20 | 24 029.51 | bloqué: distance au plancher 705 $ < 3 × risque |
+| 14 | BLOQUÉ | 2026-01-27 | 2026-04-29 | 67 | 23 893.19 | bloqué: distance au plancher 709 $ < 3 × risque |
+| 15 | BLOQUÉ | 2026-04-30 | 2026-05-26 | 19 | 24 149.81 | bloqué: distance au plancher 663 $ < 3 × risque |
+| 16 | BLOQUÉ | 2026-05-27 | 2026-06-30 | 25 | 23 246.54 | bloqué: distance au plancher 747 $ < 3 × risque |
+| 17 | BLOQUÉ | 2026-07-01 | 2026-09-02 | 46 | 23 238.88 | bloqué: distance au plancher 739 $ < 3 × risque |
+| 18 | BLOQUÉ | 2026-09-03 | 2026-09-28 | 18 | 23 036.61 | bloqué: distance au plancher 513 $ < 3 × risque |
+| 19 | BLOQUÉ | 2026-09-29 | 2026-10-28 | 22 | 23 321.58 | bloqué: distance au plancher 653 $ < 3 × risque |
+| 20 | BLOQUÉ | 2026-10-29 | 2026-11-20 | 17 | 24 160.64 | bloqué: distance au plancher 709 $ < 3 × risque |
+
+</details>
+
+<details><summary>Plis du walk-forward — <code>orb_v4_trend</code></summary>
+
+| Test | Paramètres choisis (sur les 6 mois précédents) | R ajustement | R test (trades) |
+|---|---|---:|---:|
+| 2025-01-01 → 2025-03-31 | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 1.5} | -0.4 | -2.2 (74) |
+| 2025-04-01 → 2025-06-30 | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 1.5} | -8.3 | -4.5 (64) |
+| 2025-07-01 → 2025-09-30 | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 2.0} | -5.6 | -2.7 (75) |
+| 2025-10-01 → 2025-12-31 | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 3.0} | 1.1 | 1.3 (73) |
+| 2026-01-01 → 2026-03-31 | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 3.0} | -0.1 | -3.2 (70) |
+| 2026-04-01 → 2026-06-30 | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 3.0} | -1.8 | -3.4 (76) |
+| 2026-07-01 → 2026-09-30 | {'STOP_MODE': 'mid', 'STOP_ATR': 0.0, 'RR': 3.0} | -5.5 | -10.7 (66) |
+| 2026-10-01 → 2026-11-20 | {'STOP_MODE': 'or', 'STOP_ATR': 0.0, 'RR': 1.5} | -6.3 | 9.9 (37) |
+
+| # | Statut | Début | Fin | Jours | Solde final | Raison |
+|---|---|---|---|---:|---:|---|
+| 1 | BLOQUÉ | 2025-01-01 | 2025-06-09 | 114 | 24 413.66 | bloqué: distance au plancher 669 $ < 3 × risque |
+| 2 | BLOQUÉ | 2025-06-10 | 2025-08-13 | 47 | 23 384.67 | bloqué: distance au plancher 735 $ < 3 × risque |
+| 3 | BLOQUÉ | 2025-08-14 | 2025-11-04 | 59 | 24 178.43 | bloqué: distance au plancher 632 $ < 3 × risque |
+| 4 | BLOQUÉ | 2025-11-05 | 2026-01-21 | 56 | 24 605.42 | bloqué: distance au plancher 555 $ < 3 × risque |
+| 5 | BLOQUÉ | 2026-01-22 | 2026-04-07 | 54 | 24 354.37 | bloqué: distance au plancher 660 $ < 3 × risque |
+| 6 | BLOQUÉ | 2026-04-08 | 2026-06-08 | 44 | 25 503.82 | bloqué: distance au plancher 596 $ < 3 × risque |
+| 7 | BLOQUÉ | 2026-06-09 | 2026-08-28 | 59 | 23 816.45 | bloqué: distance au plancher 701 $ < 3 × risque |
+| 8 | BLOQUÉ | 2026-08-31 | 2026-09-29 | 22 | 23 616.56 | bloqué: distance au plancher 731 $ < 3 × risque |
+| 9 | RÉUSSI | 2026-09-30 | 2026-11-20 | 38 | 27 539.86 | Objectif atteint (solde 27539.86) et règle du meilleur jour respectée (474.45 ≤ 50 % de 3674.46) |
+
+</details>
+
+#### Contrôles complémentaires
+
+| Contrôle | Résultat |
+|---|---|
+| `orb_ref` **sans aucun frais** (2025-01 → 2026-11, 1 h) | +0,038 R/trade, profit factor 1,11 (799 trades) |
+| `orb_ref` **avec frais** | −0,027 R/trade, profit factor 0,92 |
+| `orb_v4_trend` sans frais / avec frais | +0,034 R → −0,022 R/trade |
+| `orb_ref` en 15 min (60 derniers jours) | +0,06 R/trade, 120 trades |
+| `orb_v4_trend` en 15 min (60 derniers jours) | +0,095 R/trade, 64 trades |
+| `orb_ref` en 5 min (60 derniers jours) | −0,07 R/trade, 114 trades |
+| `orb_v4_trend` en 5 min (60 derniers jours) | **+0,17 R/trade**, 69 trades, 1 challenge réussi sur 2 |
+
+#### Conclusion de la recherche
+
+1. **Aucune variante n'a d'avantage hors échantillon sur 2 ans.** Les 5 variantes sont négatives sur les ≈ 23 mois de test (de −0,03 à −0,18 R par trade). Même sur les périodes d'ajustement, la meilleure combinaison est presque toujours négative : ce n'est pas un problème de réglage, il n'y a rien à régler.
+2. **La cassure du range d'ouverture a un très léger avantage brut (≈ +0,035 R/trade avant frais), entièrement mangé par le spread et le glissement (≈ 0,06 R/trade).** Plus le stop est serré, plus les frais pèsent lourd en R : c'est pourquoi `orb_v2_tight` et `orb_v3_retest` font pire que la référence.
+3. **Le retour à la moyenne (`mr_v1`) ne fonctionne pas non plus** et trouve peu d'occasions en 1 h.
+4. **La moins mauvaise variante est `orb_v4_trend`** (filtre de tendance 20 jours). Sur 2 ans : −0,03 R par trade, soit à peu près à l'équilibre. Sur les 2 derniers mois en 5 min, elle est positive (+0,17 R), mais sur 69 trades, l'écart-type de la moyenne est d'environ ±0,15 R : **ce n'est pas statistiquement différent de zéro**. C'est exactement le piège qui avait fait choisir US100/GER40/EURUSD pour aggressive_v1.
+5. **Challenges sans limite de temps** : 1 à 2 réussites sur 9 à 15 tentatives selon la variante, après 30 à 50 jours de trading. **Ces réussites viennent du hasard, pas d'un avantage.** Avec une stratégie proche de zéro, le solde fait une marche aléatoire entre l'objectif (+2 500 $) et le blocage du coupe-circuit plancher (≈ −1 750 $). Une partie des tentatives touche l'objectif par chance. Toutes les autres finissent bloquées par le coupe-circuit plancher. Aucune règle FTMO n'a été violée.
+6. **L'« espérance nette par tentative » du tableau est trompeuse et ne doit pas être lue comme un gain.** Réussir le challenge ne rapporte pas 2 500 $ : on obtient un compte financé, sur lequel il faut ensuite gagner. Or avec une espérance négative par trade, ce compte perdrait en moyenne.
+
+**Verdict de la recherche : je n'ai trouvé aucune stratégie avec un avantage démontré. Pousser l'optimisation plus loin sur ces données produirait seulement de belles courbes sur-ajustées.** Pour aller plus loin, il faudrait des données tick ou 1 min de qualité broker (spreads réels FTMO) et une idée de stratégie avec une raison économique d'exister, pas un balayage de paramètres.
 
 
 ## 4. Audit du repo source

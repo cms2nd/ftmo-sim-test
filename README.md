@@ -8,7 +8,9 @@ sim/config.py        règles FTMO, instruments, coûts, coupe-circuits, dates du
 sim/engine.py        simulateur d'ordres + moteur de règles FTMO (commun backtest/live)
 sim/data.py          données 5 min gratuites (Yahoo Finance, sans clé) + cache data/
 sim/news.py          calendrier NFP / CPI / Fed / BCE
-strategies/          une stratégie = un fichier (aggressive_v1.py = ORB Londres/NY)
+strategies/          une stratégie = un fichier (aggressive_v1.py = ORB Londres/NY, stratégie du test en direct ;
+                     orb_ref, orb_v2_tight, orb_v3_retest, orb_v4_trend, mr_v1 = variantes de recherche)
+research/            walk-forward sur 2 ans de bougies 1 h (python -m research.walkforward)
 backtest.py          backtest en challenges successifs ; make_backtest.py = rapport complet
 run.py               une exécution live (appelée par .github/workflows/simulate.yml)
 report.py            génère RAPPORT.md et les graphiques

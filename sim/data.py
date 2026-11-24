@@ -16,16 +16,18 @@ from . import config as C
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 
-def _cache_path(sym):
-    return os.path.join(DATA_DIR, f"{sym}_5m.csv")
+def _cache_path(sym, interval="5m"):
+    return os.path.join(DATA_DIR, f"{sym}_{interval}.csv")
 
 
-def load_cache(sym) -> pd.DataFrame:
-    p = _cache_path(sym)
+def load_cache(sym, interval="5m") -> pd.DataFrame:
+    p = _cache_path(sym, interval)
     if not os.path.exists(p):
         return pd.DataFrame(columns=["open", "high", "low", "close"])
     df = pd.read_csv(p, index_col=0)
     df.index = pd.to_datetime(df.index, utc=True)
+    if interval == "60m":  # quelques barres Yahoo irrégulières (xx:30) : écartées
+        df = df[df.index.minute == 0]
     return df
 
 

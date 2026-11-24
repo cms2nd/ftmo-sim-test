@@ -193,6 +193,38 @@ def weekly_section(wk):
     return "\n".join(L)
 
 
+def research_section():
+    import glob
+    files = sorted(glob.glob(os.path.join(DOCS, "research", "wf_*.json")))
+    if not files:
+        return ""
+    L = [_read("docs/research/methode.md"),
+         "\n#### Résultats hors échantillon (trades de test uniquement, 2025-01 → 2026-11, bougies 1 h)\n",
+         "| Stratégie | Trades | Espérance (R/trade) | % gagnants | Profit factor | Total R | Challenges terminés | Réussis | Taux | Jours moyens pour réussir | Espérance nette / tentative |",
+         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    for f in files:
+        w = json.load(open(f))
+        name = os.path.basename(f)[3:-5]
+        o, c = w["oos"], w["challenge"]
+        net = (c["expected_payout_per_attempt_usd"] or 0) - (c["fee_per_attempt_usd"] or 0)
+        L.append(f"| `{name}` | {o['n']} | {_fmt(o['exp_R'], 3)} | {_fmt((o['win'] or 0) * 100, 0)} % | {_fmt(o['pf'])} | "
+                 f"{_fmt(o['tot_R'], 1)} | {c['n_completed']} | {c['n_pass']} | {_fmt((c['pass_rate'] or 0) * 100, 0)} % | "
+                 f"{_fmt(c['avg_days_pass'], 1)} | {_fmt(net)} $ |")
+    for f in files:
+        w = json.load(open(f))
+        name = os.path.basename(f)[3:-5]
+        L.append(f"\n<details><summary>Plis du walk-forward — <code>{name}</code></summary>\n")
+        L.append("| Test | Paramètres choisis (sur les 6 mois précédents) | R ajustement | R test (trades) |\n|---|---|---:|---:|")
+        for r in w["folds"]:
+            L.append(f"| {r['test']} | {r['params']} | {r['train_R']} | {r['test_R']} ({r['test_n']}) |")
+        L.append("\n| # | Statut | Début | Fin | Jours | Solde final | Raison |\n|---|---|---|---|---:|---:|---|")
+        for a in w["attempts"]:
+            L.append(f"| {a['attempt']} | {a['status']} | {a['start']} | {a['end']} | {a['days']} | {_fmt(a['balance'])} | {a['reason']} |")
+        L.append("\n</details>")
+    L.append("\n" + _read("docs/research/conclusion.md"))
+    return "\n".join(L)
+
+
 def write_report():
     from run import load_state
     os.makedirs(DOCS, exist_ok=True)
@@ -210,10 +242,13 @@ def write_report():
     else:
         out.append("> **EN ATTENTE** — le test en direct n'a pas encore démarré.\n")
     out.append("⚠️ Simulation uniquement : aucun argent réel, aucun compte de courtage ni FTMO connecté.\n")
-    out.append("## Sommaire\n1. Verdict\n2. Test en direct\n3. Backtest de validation\n4. Audit du repo source\n5. Fonctionnement du simulateur\n6. Limites du test\n")
+    out.append("## Sommaire\n1. Verdict\n2. Test en direct\n3. Backtest de validation\n3 bis. Recherche d'amélioration (walk-forward)\n4. Audit du repo source\n5. Fonctionnement du simulateur\n6. Limites du test\n")
     out.append("## 1. Verdict\n\n" + _read("docs/verdict.md", "_à venir_"))
     out.append("## 2. Test en direct\n\n" + (live_section(s) if s else "_Pas encore démarré._"))
     out.append("\n## 3. Backtest de validation\n\n" + backtest_section(bt))
+    rs = research_section()
+    if rs:
+        out.append("\n## 3 bis. Recherche d'amélioration (walk-forward sur 2 ans)\n\n" + rs)
     out.append("\n## 4. Audit du repo source\n\n" + _read("docs/audit.md"))
     out.append("\n## 5. Fonctionnement du simulateur\n\n" + _read("docs/fonctionnement.md"))
     out.append("\n## 6. Limites du test\n\n" + _read("docs/limites.md"))

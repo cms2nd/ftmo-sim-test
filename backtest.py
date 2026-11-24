@@ -22,11 +22,11 @@ from sim.engine import Engine, new_state, prague_day
 from strategies.base import load
 
 
-def timeline(data):
+def timeline(data, bar_minutes=5):
     rows = {}
     for sym, df in data.items():
         for ts, o, h, l, c in zip(df.index, df["open"].values, df["high"].values, df["low"].values, df["close"].values):
-            ct = (ts + pd.Timedelta(minutes=5)).to_pydatetime()
+            ct = (ts + pd.Timedelta(minutes=bar_minutes)).to_pydatetime()
             rows.setdefault(ct, {})[sym] = {"open": float(o), "high": float(h), "low": float(l), "close": float(c)}
     return sorted(rows.items())
 
@@ -35,15 +35,27 @@ def trading_days(tl):
     return sorted({prague_day(t) for t, _ in tl if t.astimezone(C.PRAGUE).weekday() < 5})
 
 
-def run(strategy_name="aggressive_v1", instruments=None, start=None, end=None, params=None, verbose=False):
-    strat = load(strategy_name)
+INTERVAL_MIN = {"5m": 5, "15m": 15, "60m": 60}
+
+
+def run(strategy_name="aggressive_v1", instruments=None, start=None, end=None, params=None, verbose=False,
+        interval="5m", strategy=None, data=None):
+    strat = strategy or load(strategy_name)
     for k, v in (params or {}).items():
         setattr(strat, k, v)
     if instruments:
         strat.instruments = instruments
-    data = {s: load_cache(s) for s in strat.instruments}
+    if data is None:
+        data = {s: load_cache(s, interval) for s in strat.instruments}
+    else:
+        data = {s: data[s] for s in strat.instruments}
+    if start or end:  # marge de 40 jours avant le début pour les indicateurs journaliers
+        lo = pd.Timestamp(start, tz="UTC") - pd.Timedelta(days=40) if start else None
+        hi = pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=2) if end else None
+        data = {s: d[(lo is None or d.index >= lo) & (hi is None or d.index <= hi)] for s, d in data.items()}
+    strat.bar_minutes = INTERVAL_MIN[interval]
     strat.prepare(data)
-    tl = timeline(data)
+    tl = timeline(data, INTERVAL_MIN[interval])
     if start:
         tl = [x for x in tl if prague_day(x[0]) >= start]
     if end:
