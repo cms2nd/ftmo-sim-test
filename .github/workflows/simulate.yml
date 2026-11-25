@@ -75,7 +75,8 @@ jobs:
           fin=$(python -c "import json;print(1 if json.load(open('state/state.json')).get('test_finished') else 0)")
           hm=$(date -u +%H%M)
           mark="state/notified_$day"
-          if { [ "$hm" -ge 2150 ] || [ "$fin" = 1 ]; } && [ ! -f "$mark" ]; then
+          # fenêtre 21:50-22:59 UTC uniquement (après 23:00 UTC, le jour de Prague a déjà changé)
+          if { { [ "$hm" -ge 2150 ] && [ "$hm" -lt 2300 ]; } || [ "$fin" = 1 ]; } && [ ! -f "$mark" ]; then
             git pull -q --rebase -X theirs origin main || true
             python tools/notify.py --photo "$(python tools/infographic.py)" "Bilan du jour — aggressive_v1"
             [ -f state/state_orb_v4.json ] && python tools/notify.py --photo "$(python tools/infographic.py state/state_orb_v4.json)" "Bilan du jour — orb_v4_live (test parallèle)"
