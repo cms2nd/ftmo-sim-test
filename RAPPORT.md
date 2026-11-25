@@ -1,6 +1,6 @@
 # RAPPORT — Simulation FTMO Challenge 1-Step 25 000 $ (paper trading)
 
-> **EN COURS** — solde 25 000.00 $ — perte du jour 8.50 $ / 750 $ — distance au plancher 2 491.50 $ — mis à jour 2026-11-25T08:56 UTC
+> **EN COURS** — solde 25 000.00 $ — perte du jour 23.67 $ / 750 $ — distance au plancher 2 476.33 $ — mis à jour 2026-11-25T09:01 UTC
 
 ⚠️ Simulation uniquement : aucun argent réel, aucun compte de courtage ni FTMO connecté.
 
@@ -32,8 +32,8 @@ Le test en direct d'une semaine (5 jours de marché, section 2) ne changera pas 
 ## 2. Test en direct
 
 - Stratégie active : `aggressive_v1` — premier lancement : 2026-11-24T13:14:13.465556+00:00 UTC — fin du test : **2026-12-01** (heure de Prague)
-- Dernière exécution : 2026-11-25T08:56:02.710941+00:00 UTC
-- Solde : **25 000.00 $** — equity : 24 991.50 $ — plancher perte max : 22 500.00 $ — plus haut solde de fin de journée : 25 000.00 $
+- Dernière exécution : 2026-11-25T09:01:02.808624+00:00 UTC
+- Solde : **25 000.00 $** — equity : 24 976.33 $ — plancher perte max : 22 500.00 $ — plus haut solde de fin de journée : 25 000.00 $
 
 ![Courbe d'equity live](docs/equity_live.png)
 
@@ -68,7 +68,7 @@ Aucun.
 Même moteur, mêmes règles FTMO et mêmes dates que le test principal. Paramètres figés issus du walk-forward 1 an sur prix broker (stop au bord du range, objectif 3 R, EURUSD / GER40 / or).
 
 - Statut : **EN COURS**
-- Solde : **25 000.00 $** — equity 25 000.00 $ — plancher 22 500.00 $ — dernière exécution 2026-11-25T08:56 UTC
+- Solde : **25 000.00 $** — equity 25 000.00 $ — plancher 22 500.00 $ — dernière exécution 2026-11-25T09:01 UTC
 - Aucun trade pour l'instant.
 
 ## 3. Backtest de validation
