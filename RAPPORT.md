@@ -1,6 +1,6 @@
 # RAPPORT — Simulation FTMO Challenge 1-Step 25 000 $ (paper trading)
 
-> **EN COURS** — solde 25 000.00 $ — perte du jour 235.53 $ / 750 $ — distance au plancher 2 264.47 $ — mis à jour 2026-11-25T09:41 UTC
+> **EN COURS** — solde 24 727.93 $ — perte du jour 272.07 $ / 750 $ — distance au plancher 2 227.93 $ — mis à jour 2026-11-25T09:46 UTC
 
 ⚠️ Simulation uniquement : aucun argent réel, aucun compte de courtage ni FTMO connecté.
 
@@ -32,8 +32,8 @@ Le test en direct d'une semaine (5 jours de marché, section 2) ne changera pas 
 ## 2. Test en direct
 
 - Stratégie active : `aggressive_v1` — premier lancement : 2026-11-24T13:14:13.465556+00:00 UTC — fin du test : **2026-12-01** (heure de Prague)
-- Dernière exécution : 2026-11-25T09:41:02.687419+00:00 UTC
-- Solde : **25 000.00 $** — equity : 24 764.47 $ — plancher perte max : 22 500.00 $ — plus haut solde de fin de journée : 25 000.00 $
+- Dernière exécution : 2026-11-25T09:46:02.958399+00:00 UTC
+- Solde : **24 727.93 $** — equity : 24 727.93 $ — plancher perte max : 22 500.00 $ — plus haut solde de fin de journée : 25 000.00 $
 
 ![Courbe d'equity live](docs/equity_live.png)
 
@@ -41,7 +41,7 @@ Le test en direct d'une semaine (5 jours de marché, section 2) ne changera pas 
 
 | Jour | P&L clôturé |
 |---|---:|
-| — | — |
+| 2026-11-25 | -272.07 $ |
 
 ### Règle du meilleur jour
 
@@ -49,15 +49,13 @@ Aucun jour positif pour l'instant.
 
 ### Positions ouvertes
 
-| Instr. | Sens | Unités | Entrée | Stop | Objectif | Heure |
-|---|---|---:|---:|---:|---:|---|
-| GER40 | long | 1.504 | 25150 | 25001 | 25443 | 2026-11-25T08:40:00+00:00 |
+Aucune.
 
 ### Journal des trades
 
 | Instr. | Sens | Entrée (UTC) | Prix | Sortie (UTC) | Prix | Motif | P&L | Solde |
 |---|---|---|---:|---|---:|---|---:|---:|
-| — | | | | | | aucun trade pour l'instant | | |
+| GER40 | long | 2026-11-25T08:40 | 25150 | 2026-11-25T09:35 | 24983 | stop-loss | -272.07 | 24 727.93 |
 
 ### Coupe-circuits déclenchés
 
@@ -68,7 +66,7 @@ Aucun.
 Même moteur, mêmes règles FTMO et mêmes dates que le test principal. Paramètres figés issus du walk-forward 1 an sur prix broker (stop au bord du range, objectif 3 R, EURUSD / GER40 / or).
 
 - Statut : **EN COURS**
-- Solde : **25 000.00 $** — equity 25 000.00 $ — plancher 22 500.00 $ — dernière exécution 2026-11-25T09:41 UTC
+- Solde : **25 000.00 $** — equity 24 992.76 $ — plancher 22 500.00 $ — dernière exécution 2026-11-25T09:46 UTC
 - Aucun trade pour l'instant.
 
 ## 3. Backtest de validation
